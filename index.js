@@ -50,9 +50,9 @@ app.use('/slack/events', slackEvents.expressMiddleware())
 // Attach listeners to events by Slack Event "type".
 slackEvents.on('message', (event) => {
   console.log(`Received a team_join event: user ${event.user.name} has joined.`)
-
+  console.log(JSON.stringify(event))
   slackWeb.chat.postMessage({
-    channel: event.user.id,
+    channel: event.channel,
     text: message.text,
     attachments: message.attachments
   }).then((res) => {
