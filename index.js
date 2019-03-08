@@ -27,7 +27,7 @@ const message = {
 // Setting up this route to be used with the Slack Events middleware
 app.use('/slack/events', slackEvents.expressMiddleware())
 // Attach listeners to events by Slack Event "type".
-slackEvents.on('message', (event) => {
+slackEvents.on('team_join', (event) => {
   // console.log(`Received a team_join event: user ${event.user.name} has joined.`)
   // console.log(JSON.stringify(event))
   slackWeb.chat.postMessage({
