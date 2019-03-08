@@ -14,37 +14,32 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
 const message = {
-  'text': "Welcome to the team! We're glad you're here.",
-  'attachments': [
-    {
-      'title': 'What is Slack?',
-      'text': 'Slack is where work happens. Welcome aboard, brave adventurer, to the world of Slack!',
-      'color': '#3AA3E3',
-      'attachment_type': 'default'
-    },
-    {
-      'title': 'Code of Conduct',
-      'text': ' Here at this company, we treat each other with respect and empathy.',
-      'callback_id': 'accept_terms',
-      'color': '#3f1daf',
-      'actions': [
-        {
-          'name': 'accept',
-          'text': 'I Accept',
-          'style': 'primary',
-          'type': 'button',
-          'value': 'accept'
-        }
-      ]
-    }
-  ]
+  'text': "Welcome to HOTOSM Slack @user! HOT is an international team dedicated to humanitarian action and community development through open mapping.\
+
+  Here are some handy links to get started in the community:\
+  \
+  \
+  - HOTOSM website is where you’ll learn more about our [projects](https://www.hotosm.org/our-work) & [tools](https://www.hotosm.org/tools-and-data) \
+  - We communicate & post updates in public channel. If you have questions/ideas, this is the best way to contact the community. Here’s a quick list of a few popular channels:\
+    - #disaster-mapping → discussion about mapping project activation & contribution, contact @coordinators \
+    - #mappers-support → mapping & validation related \
+    - #tasking_manager_3 → reach out to @tech \
+    - #export-tool \
+    - #field-campaigner \
+    - #openaerialmap \
+    - #gsoc18 → coordination group for GSOC \
+    - #outreachy → coordination group for Outreachy program \
+    - #starter-issues → Identifying issues to contribute to across HOTOSM tech stack \
+    - #developers → any tech related discussion \
+  - Tasking Manager  is the primary tool for mapping project coordination.  Here’s all the projects that the community has been building on  https://tasks.hotosm.org/contribute?difficulty=ALL \
+  - Check out our GitHub page to get an overview of what the tech community is working on. https://github.com/hotosm/ \
+  - All community members are expected to participate & collaborate in line with our code of conduct. https://www.hotosm.org/code-of-conduct \
+  \
+  Great to have you here!\
+  "
+  
 }
-const updatedCodeOfConduct = {
-  'title': 'Code of Conduct',
-  'text': ' Here at this company, we treat each other with respect and empathy.\n :white_check_mark: Thank you for accepting!',
-  'callback_id': 'accept_terms',
-  'color': '#3f1daf'
-}
+
 // Setting up this route to be used with the Slack Events middleware
 app.use('/slack/events', slackEvents.expressMiddleware())
 // Attach listeners to events by Slack Event "type".
