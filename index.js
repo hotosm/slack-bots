@@ -14,7 +14,8 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
 const message = {
-  'text': "Welcome to HOTOSM Slack @user! HOT is an international team dedicated to humanitarian action and community development through open mapping. Great to have you here!"
+  'text': "Welcome to HOTOSM Slack @user! \
+  HOT is an international team dedicated to humanitarian action and community development through open mapping. Great to have you here!"
   
 }
 
@@ -22,8 +23,8 @@ const message = {
 app.use('/slack/events', slackEvents.expressMiddleware())
 // Attach listeners to events by Slack Event "type".
 slackEvents.on('message', (event) => {
-  console.log(`Received a team_join event: user ${event.user.name} has joined.`)
-  console.log(JSON.stringify(event))
+  // console.log(`Received a team_join event: user ${event.user.name} has joined.`)
+  // console.log(JSON.stringify(event))
   slackWeb.chat.postMessage({
     channel: event.channel,
     text: message.text,
