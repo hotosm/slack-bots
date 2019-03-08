@@ -30,50 +30,9 @@ slackEvents.on('message', (event) => {
     attachments: message.attachments
   }).then((res) => {
     console.log(`Message sent: ${res.ts}`)
-    // store the user's data
-    fs.readFile('database.json', (err, data) => {
-      if (err) throw err
-      // read the data into your program to be read
-      let usersSent = JSON.parse(data)
-      // build the object for a specific user to save
-      usersSent[event.user.id] = {
-        'time_sent': res.message.ts,
-        'accepted': false,
-        'time_accepted': ''
-      }
-      // And finally, string up the data, write it back to file!
-      let stringifiedUsersSent = JSON.stringify(usersSent)
-      fs.writeFile('database.json', stringifiedUsersSent, () => {
-        if (err) throw err
-        console.log(`data saved for user ${event.user.id}`)
-      })
-    })
   }).catch(console.error)
 })
-app.post('/slack/button', bodyParser.urlencoded({ extended: true }), (req, res) => {
-  const sendData = JSON.parse(req.body.payload)
-  const user = sendData.user.id
-  const timeAccepted = sendData.action_ts
-  fs.readFile('database.json', (err, data) => {
-    if (err) throw err
-    let acceptDatabase = JSON.parse(data)
-    acceptDatabase[user].accepted = true
-    acceptDatabase[user].time_accepted = timeAccepted
-    let stringifiedAcceptDatabase = JSON.stringify(acceptDatabase)
-    fs.writeFile('database.json', stringifiedAcceptDatabase, (err) => {
-      if (err) throw err
-      res.sendStatus(200)
-      console.log(`${user} has accepted the code of conduct.`)
-      slackWeb.chat.update({
-        channel: sendData.channel.id,
-        ts: sendData.message_ts,
-        attachments: [sendData.original_message.attachments[0], updatedCodeOfConduct]
-      }).then(() => {
-        console.log(`Message updated! ${timeAccepted}`)
-      }).catch(console.error)
-    })
-  })
-})
+
 // Handle errors (see `errorCodes` export)
 slackEvents.on('error', console.error)
 // Start a basic HTTP server
