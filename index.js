@@ -7,6 +7,11 @@ const slackEvents = createEventAdapter(process.env.SLACK_SIGNING_SECRET)
 const port = process.env.PORT || 3000
 // Initialize the Web API Client
 const { WebClient } = require('@slack/client')
+const fs = require('fs')
+var welcomeMessage
+fs.readFile('./message.md', 'utf8', (err, data) => {
+  welcomeMessage = data
+});
 const token = process.env.SLACK_TOKEN
 const slackWeb = new WebClient(token)
 // Setting Up Express to be used with the Events API
@@ -27,7 +32,7 @@ slackEvents.on('team_join', (event) => {
   // console.log(JSON.stringify(event))
   slackWeb.chat.postMessage({
     channel: event.channel,
-    text: message.text,
+    text: welcomeMessage,
     attachments: message.attachments
   }).then((res) => {
     console.log(`Message sent: ${res.ts}`)
