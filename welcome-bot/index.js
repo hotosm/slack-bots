@@ -26,8 +26,7 @@ slackEvents.on('team_join', (event) => {
   console.log(`Received a team_join event: user ${event.user.name} has joined.`)
   slackWeb.chat.postMessage({
     channel: event.channel,
-    text: welcomeMessage,
-    attachments: message.attachments
+    text: welcomeMessage
   }).then((res) => {
     console.log(`Message sent: ${res.ts}`)
   }).catch(console.error)
