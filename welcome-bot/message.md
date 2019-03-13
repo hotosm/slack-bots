@@ -1,4 +1,4 @@
-Welcome to HOTOSM Slack @user! HOT is an international team dedicated to humanitarian action and community development through open mapping.
+Welcome to HOTOSM Slack! HOT is an international team dedicated to humanitarian action and community development through open mapping.
 
 Here are some handy links to get started in the community:
 
