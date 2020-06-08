@@ -49,7 +49,7 @@ const createBlock = (status, mappersOnline, totalProjects) => {
   ]
 }
 
-module.exports.healthCheck = async (event) => {
+module.exports.healthTM = async (event) => {
   const body = parseBody(event.body)
   const responseURL = decodeURIComponent(body.response_url)
 
