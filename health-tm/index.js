@@ -6,17 +6,15 @@ const TM_STATUS_URL =
 const TM_STATISTICS_URL =
   'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
 
-const parseBody = (body) => {
-  const bodyArray = body.split('&')
+const parseEvent = (event) => {
+  const snsJSON = JSON.stringify(event.Records[0].Sns)
+  console.log(`snsJSON: ${snsJSON}`)
+  const snsObject = JSON.parse(snsJSON)
+  console.log(`snsObject: ${snsObject}`)
+  const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message))
+  console.log(`decodedSns: ${decodedSns}`)
 
-  const bodyObject = bodyArray.reduce((accumulator, currentValue) => {
-    const [key, value] = currentValue.split('=')
-
-    accumulator[key] = value
-
-    return accumulator
-  }, {})
-  return bodyObject
+  return decodedSns
 }
 
 const createBlock = (status, mappersOnline, totalProjects) => {
@@ -48,8 +46,8 @@ const createBlock = (status, mappersOnline, totalProjects) => {
 }
 
 exports.handler = async (event) => {
-  const body = parseBody(event.body)
-  const responseURL = decodeURIComponent(body.response_url)
+  const body = parseEvent(event)
+  const responseURL = body.response_url
 
   try {
     const taskingManagerStatus = await fetch(TM_STATUS_URL)
