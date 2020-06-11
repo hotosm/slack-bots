@@ -8,11 +8,8 @@ const TM_STATISTICS_URL =
 
 const parseEvent = (event) => {
   const snsJSON = JSON.stringify(event.Records[0].Sns)
-  console.log(`snsJSON: ${snsJSON}`)
   const snsObject = JSON.parse(snsJSON)
-  console.log(`snsObject: ${snsObject}`)
   const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message))
-  console.log(`decodedSns: ${decodedSns}`)
 
   return decodedSns
 }
@@ -50,13 +47,13 @@ exports.handler = async (event) => {
   const responseURL = body.response_url
 
   try {
-    const taskingManagerStatus = await fetch(TM_STATUS_URL)
-    const statusJSON = await taskingManagerStatus.json()
-    const status = statusJSON.status
+    const taskingManagerStatusJSON = await fetch(TM_STATUS_URL)
+    const taskingManagerObj = await taskingManagerStatusJSON.json()
+    const status = taskingManagerObj.status
 
-    const taskingManagerStatistics = await fetch(TM_STATISTICS_URL)
-    const statisticsJSON = await taskingManagerStatistics.json()
-    const { mappersOnline, totalProjects } = statisticsJSON
+    const taskingManagerStatisticsJSON = await fetch(TM_STATISTICS_URL)
+    const taskingManagerStatisticsObj = await taskingManagerStatisticsJSON.json()
+    const { mappersOnline, totalProjects } = taskingManagerStatisticsObj
 
     const slackMessage = {
       response_type: 'ephemeral',
