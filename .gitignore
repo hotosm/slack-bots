@@ -63,5 +63,5 @@ typings/
 # formatting config
 *.prettierrc*
 
-# MAC Config file
+# Mac Config file
 *.DS_Store*
