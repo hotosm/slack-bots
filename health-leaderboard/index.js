@@ -43,8 +43,11 @@ exports.handler = async (event) => {
     const overpassTimestamp = await augmentedDiffsJSON.json()
 
     const osmStatsJSON = await fetch(OSM_STATS_URL)
-    const osmStatsObj = await osmStatsJSON.json()
-    const leaderboardTimestamp = osmStatsObj[1].id
+    const osmStatsArray = await osmStatsJSON.json()
+    const osmAugmentedDiffs = osmStatsArray.find(
+      (object) => object.component === 'augmented diffs'
+    )
+    const leaderboardTimestamp = osmAugmentedDiffs.id
 
     const {
       overpassDate,
@@ -69,7 +72,7 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
+    fetch(responseURL, {
       method: 'post',
       body: JSON.stringify('Something went wrong with your request'),
       headers: { 'Content-Type': 'application/json' },
