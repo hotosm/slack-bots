@@ -44,7 +44,7 @@ exports.handler = async (event) => {
 
     const osmStatsJSON = await fetch(OSM_STATS_URL)
     const osmStatsObj = await osmStatsJSON.json()
-    const leaderboardTimestamp = osmStatsObj[2].id
+    const leaderboardTimestamp = osmStatsObj[1].id
 
     const {
       overpassDate,
