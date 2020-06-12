@@ -1,81 +1,82 @@
-const fetch = require('node-fetch')
+const fetch = require("node-fetch");
 
 const TM_STATUS_URL =
-  'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/heartbeat/'
+  "https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/heartbeat/";
 
 const TM_STATISTICS_URL =
-  'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
+  "https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true";
 
 const parseEvent = (event) => {
-  const snsJSON = JSON.stringify(event.Records[0].Sns)
-  const snsObject = JSON.parse(snsJSON)
-  const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message))
+  const snsJSON = JSON.stringify(event.Records[0].Sns);
+  const snsObject = JSON.parse(snsJSON);
+  const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message));
 
-  return decodedSns
-}
+  return decodedSns;
+};
 
-const createBlock = (status, mappersOnline, totalProjects) => {
+const createBlock = (status, mappersOnline, totalProjects, channelName) => {
   return [
     {
-      type: 'section',
+      type: "section",
       text: {
-        type: 'mrkdwn',
+        type: "mrkdwn",
         text:
-          status === 'healthy'
-            ? ':white_check_mark: The Tasking Manager is operational'
-            : ':heavy_exclamation_mark: The Tasking Manager cannot be reached',
+          status === "healthy"
+            ? ":white_check_mark: *The Tasking Manager is operational*"
+            : ":heavy_exclamation_mark: *The Tasking Manager cannot be reached*",
       },
     },
     {
-      type: 'section',
+      type: "section",
       fields: [
         {
-          type: 'mrkdwn',
-          text: `Number of Mappers Online: ${mappersOnline}`,
+          type: "mrkdwn",
+          text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
         },
         {
-          type: 'mrkdwn',
-          text: `Number of Projects Hosted: ${totalProjects}`,
+          type: "mrkdwn",
+          text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
         },
       ],
     },
-  ]
-}
+  ];
+};
 
 exports.handler = async (event) => {
-  const body = parseEvent(event)
-  const responseURL = body.response_url
+  const body = parseEvent(event);
+  const responseURL = body.response_url;
+  const { channel_name } = body;
 
   try {
-    const taskingManagerStatusJSON = await fetch(TM_STATUS_URL)
-    const taskingManagerObj = await taskingManagerStatusJSON.json()
-    const status = taskingManagerObj.status
+    const taskingManagerStatusJSON = await fetch(TM_STATUS_URL);
+    const taskingManagerObj = await taskingManagerStatusJSON.json();
+    const status = taskingManagerObj.status;
 
-    const taskingManagerStatisticsJSON = await fetch(TM_STATISTICS_URL)
-    const taskingManagerStatisticsObj = await taskingManagerStatisticsJSON.json()
-    const { mappersOnline, totalProjects } = taskingManagerStatisticsObj
+    const taskingManagerStatisticsJSON = await fetch(TM_STATISTICS_URL);
+    const taskingManagerStatisticsObj = await taskingManagerStatisticsJSON.json();
+    const { mappersOnline, totalProjects } = taskingManagerStatisticsObj;
 
     const slackMessage = {
-      response_type: 'ephemeral',
-      blocks: createBlock(status, mappersOnline, totalProjects),
-    }
+      response_type: "ephemeral",
+      blocks: createBlock(status, mappersOnline, totalProjects, channel_name),
+    };
 
-    fetch(responseURL, {
-      method: 'post',
+    await fetch(responseURL, {
+      method: "post",
       body: JSON.stringify(slackMessage),
-      headers: { 'Content-Type': 'application/json' },
-    })
+      headers: { "Content-Type": "application/json" },
+    });
 
     return {
       statusCode: 200,
-    }
+    };
   } catch (error) {
-    console.error(error)
+    console.error(error);
 
-    fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await fetch(responseURL, {
+      method: "post",
+      body: JSON.stringify("Something went wrong with your request"),
+      headers: { "Content-Type": "application/json" },
+    });
   }
-}
+};
