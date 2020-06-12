@@ -57,7 +57,7 @@ exports.handler = async (event) => {
       response_type: 'ephemeral',
     }
 
-    fetch(responseURL, {
+    await fetch(responseURL, {
       method: 'post',
       body: JSON.stringify(slackMessage),
       headers: { 'Content-Type': 'application/json' },
@@ -69,7 +69,7 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(error)
 
-    fetch(responseURL, {
+    await fetch(responseURL, {
       method: 'post',
       body: JSON.stringify('Something went wrong with your request'),
       headers: { 'Content-Type': 'application/json' },
