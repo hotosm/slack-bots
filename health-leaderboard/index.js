@@ -1,4 +1,5 @@
 const fetch = require('node-fetch')
+const axios = require('axios')
 
 const OVERPASS_API_URL = 'https://overpass-api.de/api/augmented_diff_status'
 
@@ -56,8 +57,16 @@ exports.handler = async (event) => {
     } = calculateTimestampDifference(overpassTimestamp, leaderboardTimestamp)
 
     const slackMessage = {
-      text: `The Leaderboard has been last updated on ${leaderboardDate}. The latest available data is from ${overpassDate}. The Leaderboard is ${daysDifference}.`,
       response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `The Missing Maps Leaderboard data is _${daysDifference}_.\nIt was last updated on *${leaderboardDate}*.\nThe latest available data is from *${overpassDate}*.`,
+          },
+        },
+      ],
     }
 
     await fetch(responseURL, {
