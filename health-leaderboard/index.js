@@ -81,7 +81,7 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(error)
 
-    fetch(responseURL, {
+    await fetch(responseURL, {
       method: 'post',
       body: JSON.stringify('Something went wrong with your request'),
       headers: { 'Content-Type': 'application/json' },

@@ -14,7 +14,7 @@ const parseEvent = (event) => {
   return decodedSns;
 };
 
-const createBlock = (status, mappersOnline, totalProjects, channelName) => {
+const createBlock = (status, mappersOnline, totalProjects) => {
   return [
     {
       type: "section",
