@@ -1,5 +1,4 @@
 const fetch = require('node-fetch')
-const axios = require('axios')
 
 const OVERPASS_API_URL = 'https://overpass-api.de/api/augmented_diff_status'
 
