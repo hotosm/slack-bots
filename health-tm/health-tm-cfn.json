@@ -1,0 +1,44 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Lambda-SNS pair for health-tm Slack command",
+  "Resources": {
+    "HealthTmLambda": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "health-tm",
+        "Handler": "index.handler",
+        "Role": "arn:aws:iam::670261699094:role/service-role/test-slack-router-role-4hs4dpro",
+        "Code": {
+          "S3Bucket": "lambda-andria",
+          "S3Key": "health-tm.zip"
+        },
+        "Runtime": "nodejs12.x",
+        "Timeout": "30"
+      }
+    },
+    "HealthTmSNS": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "health-tm",
+        "Subscription": [{
+          "Endpoint": {
+            "Fn::GetAtt": [
+              "HealthTmLambda",
+              "Arn"
+            ]
+          },
+          "Protocol": "lambda"
+        }]
+      }
+    },
+    "HealthTmPermission": {
+      "Type" : "AWS::Lambda::Permission",
+      "Properties" : {
+        "Action" : "lambda:InvokeFunction",
+        "FunctionName" : { "Ref": "HealthTmLambda" },
+        "Principal" : "sns.amazonaws.com",
+        "SourceArn" : { "Ref": "HealthTmSNS" }
+      }
+    }
+  }
+}
