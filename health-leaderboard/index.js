@@ -16,10 +16,12 @@ const calculateTimestampDifference = (
   overpassTimestamp,
   leaderboardTimestamp
 ) => {
-  const overpassEpochTime = (overpassTimestamp + 22457216) * 60000
+  const OSM_EPOCH = 22457216
+
+  const overpassEpochTime = (overpassTimestamp + OSM_EPOCH) * 60000
   const overpassDate = new Date(overpassEpochTime)
 
-  const leaderboardEpochTime = (leaderboardTimestamp + 22457216) * 60000
+  const leaderboardEpochTime = (leaderboardTimestamp + OSM_EPOCH) * 60000
   const leaderboardDate = new Date(leaderboardEpochTime)
 
   const daysDifference = Math.floor(
