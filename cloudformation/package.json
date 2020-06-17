@@ -1,0 +1,14 @@
+{
+  "name": "slack-api-lambda-router",
+  "version": "1.0.0",
+  "description": "Cloudformation stack for API Gateway and Lambda Router of HOTOSM Slackbot Router",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Andria Hibe <andriacohibe@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@mapbox/cloudfriend": "^4.2.0",
+    "aws-sdk": "^2.698.0"
+  }
+}
