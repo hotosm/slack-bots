@@ -7,14 +7,36 @@ const OSMCHA_REQUEST_HEADER = {
   },
 }
 
+const groupFlagsIntoSections = (flags, size) => {
+  const flagsArray = []
+
+  for (let i = 0; i < flags.length; i++) {
+    const lastFlag = flagsArray[flagsArray.length - 1]
+
+    if (!lastFlag || lastFlag.length === size) {
+      flagsArray.push([flags[i]])
+    } else {
+      lastFlag.push(flags[i])
+    }
+  }
+
+  return flagsArray.map((flag) => {
+    return {
+      type: 'section',
+      fields: flag,
+    }
+  })
+}
+
 const createBlock = (
   projectId,
   projectInfo,
   changesetCount,
   changesetFlags,
-  suspectChangesetCount,
-  osmURL
+  suspectChangesetCount
 ) => {
+  const ARRAY_COUNT = 10
+
   const suspectChangesetPercentage = Math.round(
     (suspectChangesetCount / changesetCount) * 100
   )
@@ -23,31 +45,30 @@ const createBlock = (
     if (flag.changesets != 0) {
       accumulator.push({
         type: 'mrkdwn',
-        text: `${flag.name}: ${flag.changesets} changesets`,
+        text: `*${flag.name}*: ${flag.changesets} changesets`,
       })
     }
     return accumulator
   }, [])
+
+  const flagSections = groupFlagsIntoSections(flagArray, ARRAY_COUNT)
 
   return [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `There are ${changesetCount} changesets for <${osmURL}|#${projectId} - ${projectInfo.name}>.`,
+        text: `There are *${changesetCount} changesets* for #${projectId} - ${projectInfo.name}.`,
       },
     },
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `${suspectChangesetCount} or ${suspectChangesetPercentage}% of changesets have been flagged as suspicious. Here is the breakdown of flags:`,
+        text: `*${suspectChangesetCount} or ${suspectChangesetPercentage}% of changesets* have been flagged as suspicious.\nHere is the breakdown of flags:`,
       },
     },
-    {
-      type: 'section',
-      fields: flagArray,
-    },
+    ...flagSections,
   ]
 }
 
@@ -98,8 +119,6 @@ exports.handler = async (event) => {
     const osmChaProjectStatsObj = await osmChaProjectStatsJSON.json()
     const { changesets, reasons } = osmChaProjectStatsObj
 
-    const osmURL = `https://osmcha.org/filters?filters={"in_bbox":[{"label":"${aoiBBOX}","value":"${aoiBBOX}"}],"area_lt":[{"label":2,"value":2}],"date__gte":[{"label":${dateCreated},"value":${dateCreated}}],"comment":[{"label":${changesetComment},"value":${changesetComment}}]}`
-
     const slackMessage = {
       response_type: 'ephemeral',
       blocks: createBlock(
@@ -107,8 +126,7 @@ exports.handler = async (event) => {
         projectInfo,
         changesets,
         reasons,
-        suspectChangesetCount,
-        osmURL
+        suspectChangesetCount
       ),
     }
 
