@@ -1,8 +1,8 @@
 {
-  "name": "osmcha-stats-projectid",
+  "name": "osmcha-stats-project",
   "version": "1.0.0",
   "description": "Returns changeset stats for a particular TM project",
-  "main": "osmcha-stats-projectid-lambda.js",
+  "main": "osmcha-stats-project-lambda.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
