@@ -1,8 +1,8 @@
 {
-  "name": "health-tm",
+  "name": "osmcha-stats-projectid",
   "version": "1.0.0",
-  "description": "Returns the current status and other information regarding the Tasking Manager",
-  "main": "health-tm-lambda.js",
+  "description": "Returns changeset stats for a particular TM project",
+  "main": "osmcha-stats-projectid-lambda.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,6 +12,10 @@
   },
   "author": "Andria Hibe <andriacohibe@gmail.com>",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hotosm/slack-bots/issues"
+  },
+  "homepage": "https://github.com/hotosm/slack-bots#readme",
   "dependencies": {
     "node-fetch": "^2.6.0"
   }
