@@ -45,7 +45,6 @@ const createBlock = (status, mappersOnline, totalProjects) => {
 exports.handler = async (event) => {
   const body = parseEvent(event)
   const responseURL = body.response_url
-  const { channel_name } = body
 
   try {
     const taskingManagerStatusJSON = await fetch(TM_STATUS_URL)
@@ -58,7 +57,7 @@ exports.handler = async (event) => {
 
     const slackMessage = {
       response_type: 'ephemeral',
-      blocks: createBlock(status, mappersOnline, totalProjects, channel_name),
+      blocks: createBlock(status, mappersOnline, totalProjects),
     }
 
     await fetch(responseURL, {
