@@ -8,7 +8,7 @@ const parseEvent = (event) => {
   return decodedSns
 }
 
-const createSlackResponse = (responseURL, messageBlock) => {
+const createSlackResponse = async (responseURL, messageBlock) => {
   await fetch(responseURL, {
     method: 'post',
     body: JSON.stringify({
@@ -21,6 +21,7 @@ const createSlackResponse = (responseURL, messageBlock) => {
 exports.handler = async (event) => {
   const body = parseEvent(event)
   const responseURL = body.response_url
+  const projectID = body.text
 
   const projectIdHasNonDigit = !!projectID.match(/\D/)
   if (projectIdHasNonDigit) {
@@ -64,7 +65,6 @@ exports.handler = async (event) => {
 
   const {
     projectId,
-    name,
     projectInfo,
     percentMapped,
     percentValidated,
@@ -74,12 +74,9 @@ exports.handler = async (event) => {
   const taskingManagerStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/`
 
   const taskingManagerStatsJSON = await fetch(taskingManagerStatsURL)
-  const taskingManagerStatsObj = await fetch(taskingManagerStatsJSON)
+  const taskingManagerStatsObj = await taskingManagerStatsJSON.json()
 
-  const {
-    totalMappers,
-    totalTasks,
-  } = taskingManagerStatsObj
+  const { totalMappers, totalTasks } = taskingManagerStatsObj
 
   const projectURL = `https://tasks.hotosm.org/project/${projectID}`
 
@@ -88,7 +85,14 @@ exports.handler = async (event) => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `<${projectURL}|*${projectId} - ${name}*>`,
+        text: `<${projectURL}|*${projectId} - ${projectInfo.name}*>`,
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*${status}* - ${projectInfo.shortDescription}`,
       },
     },
     {
@@ -98,13 +102,6 @@ exports.handler = async (event) => {
         text: `*Project Area* - ${taskingManagerStatsObj['projectArea(in sq.km)']} sq. km.`,
       },
     },
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `*${status}* - ${projectInfo.shortDescription}`,
-      },
-    }
     {
       type: 'divider',
     },
