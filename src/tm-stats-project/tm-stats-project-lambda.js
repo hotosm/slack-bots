@@ -53,7 +53,7 @@ exports.handler = async (event) => {
       },
     ]
 
-    return createSlackResponse(errorBlock)
+    return createSlackResponse(responseURL, errorBlock)
   }
 
   // Change null values in data to 'N/A' instead for readability
