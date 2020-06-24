@@ -64,7 +64,7 @@ exports.handler = async (event) => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `Missing Maps Leaderboard data is _${daysDifference}_.\nFeature count and user stats were last updated on *${leaderboardDate}*.\nChangeset and Edit count is from *${overpassDate}*.`,
+            text: `:calendar: Missing Maps Leaderboard data is _${daysDifference}_.\nFeature count and user stats were last updated on *${leaderboardDate}*.\nChangeset and Edit count is from *${overpassDate}*.`,
           },
         },
       ],
