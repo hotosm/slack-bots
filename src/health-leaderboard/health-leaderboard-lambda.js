@@ -16,7 +16,7 @@ const calculateTimestampDifference = (
   overpassTimestamp,
   leaderboardTimestamp
 ) => {
-  const OSM_EPOCH = 22457216
+  const OSM_EPOCH = 22457216 // Wed, 12 Sep 2012 06:56:00 UTC in minutes
 
   const overpassEpochTime = (overpassTimestamp + OSM_EPOCH) * 60000
   const overpassDate = new Date(overpassEpochTime)
@@ -24,15 +24,23 @@ const calculateTimestampDifference = (
   const leaderboardEpochTime = (leaderboardTimestamp + OSM_EPOCH) * 60000
   const leaderboardDate = new Date(leaderboardEpochTime)
 
-  const daysDifference = Math.floor(
+  let daysDifference =
     (overpassEpochTime - leaderboardEpochTime) / (1000 * 60 * 60 * 24)
-  )
+
+  const DIFF_THRESHOLD = 0.0208333 // 30 minutes
+
+  if (daysDifference <= DIFF_THRESHOLD) {
+    daysDifference = 'up-to-date'
+  } else if (daysDifference > DIFF_THRESHOLD && daysDifference < 1) {
+    daysDifference = 'less than 1 day behind'
+  } else {
+    daysDifference = `${Math.floor(daysDifference)} day(s) behind`
+  }
 
   return {
     overpassDate: overpassDate,
     leaderboardDate: leaderboardDate,
-    daysDifference:
-      daysDifference === 0 ? 'up-to-date' : `${daysDifference} days behind`,
+    daysDifference: daysDifference,
   }
 }
 
