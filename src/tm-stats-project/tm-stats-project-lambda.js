@@ -1,13 +1,5 @@
 const fetch = require('node-fetch')
 
-const parseEvent = (event) => {
-  const snsJSON = JSON.stringify(event.Records[0].Sns)
-  const snsObject = JSON.parse(snsJSON)
-  const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message))
-
-  return decodedSns
-}
-
 const createSlackResponse = async (responseURL, messageBlock) => {
   await fetch(responseURL, {
     method: 'post',
@@ -18,29 +10,24 @@ const createSlackResponse = async (responseURL, messageBlock) => {
   })
 }
 
-exports.handler = async (event) => {
-  const body = parseEvent(event)
-  const responseURL = body.response_url
-  const projectID = body.text
+const statsTaskingManager = async (responseURL) => {
+  //returns stats for the instance
+}
 
-  const projectIdHasNonDigit = !!projectID.match(/\D/)
-  if (projectIdHasNonDigit) {
-    const invalidIdBlock = [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: ':x: Invalid project ID',
-        },
-      },
-    ]
-    return createSlackResponse(responseURL, invalidIdBlock)
-  }
+const statsProjectUser = async (responseURL, params) => {
+  // will need to separate params first
+  //8272+hello+1234+4567 string
+}
 
-  const taskingManagerSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectID}/queries/summary/`
+const statsUser = async (responseURL, user) => {
+  // returns stats on user
+}
 
-  const taskingManagerSummaryJSON = await fetch(taskingManagerSummaryURL)
-  const taskingManagerSummaryObj = await taskingManagerSummaryJSON.json()
+const statsProject = async (responseURL, projectId) => {
+  const taskingManagerSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/`
+
+  const taskingManagerSummaryResponse = await fetch(taskingManagerSummaryURL)
+  const taskingManagerSummaryObj = await taskingManagerSummaryResponse.json()
 
   if (taskingManagerSummaryObj.Error) {
     const errorBlock = [
@@ -64,7 +51,6 @@ exports.handler = async (event) => {
   }
 
   const {
-    projectId,
     projectInfo,
     percentMapped,
     percentValidated,
@@ -73,12 +59,12 @@ exports.handler = async (event) => {
 
   const taskingManagerStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/`
 
-  const taskingManagerStatsJSON = await fetch(taskingManagerStatsURL)
-  const taskingManagerStatsObj = await taskingManagerStatsJSON.json()
+  const taskingManagerStatsResponse = await fetch(taskingManagerStatsURL)
+  const taskingManagerStatsObj = await taskingManagerStatsResponse.json()
 
   const { totalMappers, totalTasks } = taskingManagerStatsObj
 
-  const projectURL = `https://tasks.hotosm.org/project/${projectID}`
+  const projectURL = `https://tasks.hotosm.org/project/${projectId}`
 
   const successBlock = [
     {
@@ -129,4 +115,24 @@ exports.handler = async (event) => {
   ]
 
   return createSlackResponse(responseURL, successBlock)
+}
+
+exports.handler = async (event) => {
+  const snsMessage = JSON.parse(event.Records[0].Sns.Message)
+  const responseURL = decodeURIComponent(snsMessage.response_url)
+  const commandParams = snsMessage.text
+
+  if (!commandParams) {
+    return statsTaskingManager(responseURL)
+  }
+
+  if (commandParams.includes('+')) {
+    return statsProjectUser(commandParams)
+  } else {
+    const commandParamsHasNonDigit = !!commandParams.match(/\D/)
+
+    commandParamsHasNonDigit
+      ? statsUser(responseURL, commandParams)
+      : statsProject(responseURL, commandParams)
+  }
 }
