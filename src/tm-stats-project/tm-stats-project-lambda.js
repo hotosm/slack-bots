@@ -11,7 +11,43 @@ const createSlackResponse = async (responseURL, messageBlock) => {
 }
 
 const statsTaskingManager = async (responseURL) => {
-  //returns stats for the instance
+  const TM_STATISTICS_URL =
+    'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
+
+  const taskingManagerStatisticsResponse = await fetch(TM_STATISTICS_URL)
+  const taskingManagerStatisticsObj = await taskingManagerStatisticsResponse.json()
+  const {
+    mappersOnline,
+    tasksMapped,
+    totalMappers,
+    totalProjects,
+  } = taskingManagerStatisticsObj
+
+  const taskingManagerStatsBlock = [
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `:teamwork-dreamwork: *Number of Tasks Mapped*: ${tasksMapped}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `:round_pushpin: *Number of Mappers*: ${totalMappers}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+        },
+      ],
+    },
+  ]
+
+  return createSlackResponse(responseURL, taskingManagerStatsBlock)
 }
 
 const statsProjectUser = async (responseURL, params) => {
@@ -66,7 +102,7 @@ const statsProject = async (responseURL, projectId) => {
 
   const projectURL = `https://tasks.hotosm.org/project/${projectId}`
 
-  const successBlock = [
+  const projectStatsBlock = [
     {
       type: 'section',
       text: {
@@ -114,7 +150,7 @@ const statsProject = async (responseURL, projectId) => {
     },
   ]
 
-  return createSlackResponse(responseURL, successBlock)
+  return createSlackResponse(responseURL, projectStatsBlock)
 }
 
 exports.handler = async (event) => {
