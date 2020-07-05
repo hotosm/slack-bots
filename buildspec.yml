@@ -9,8 +9,9 @@ phases:
       - rm -f .npmrc
       - rm -rf .git/
 artifacts:
+  files: '**/*'
   secondary-artifacts:
     artifact1:
       files:
-        - src/health-tm/**
+        - src/health-tm/**/*
       name: $CODEBUILD_RESOLVED_SOURCE_VERSION-health-tm
