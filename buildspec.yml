@@ -1,0 +1,16 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - npm install -g decrypt-kms-env
+      - eval $(decrypt-kms-env) && echo "//registry.npmjs.org/:_authToken=${NPM_ACCESS_TOKEN}" > .npmrc
+      - npm install --production
+      - npm i --production --prefix src/health-tm/ src/health-tm
+      - rm -f .npmrc
+      - rm -rf .git/
+artifacts:
+  secondary-artifacts:
+    artifact1:
+      files:
+        - src/health-tm/**
+      name: $CODEBUILD_RESOLVED_SOURCE_VERSION-health-tm
