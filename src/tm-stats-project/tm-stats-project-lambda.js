@@ -8,11 +8,31 @@ const TM_REQUEST_HEADER = {
   },
 }
 
+const containsNonDigit = (parameter) => {
+  return !!parameter.match(/\D/)
+}
+
+const projectExists = async (responseURL, projectId) => {
+  const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/`
+  const projectSummaryResponse = await fetch(projectSummaryURL)
+
+  if (projectSummaryResponse.status === 500) {
+    return await fetch(responseURL, {
+      method: 'post',
+      body:
+        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  projectSummaryResponse.status === 200 ? true : false
+}
+
 const transformSecondsToDHMS = (time) => {
   time = Number(time)
 
   if (time === 0) {
-    return 'no time'
+    return '0 time'
   }
 
   const days = Math.floor(time / (3600 * 24))
@@ -47,68 +67,102 @@ const createSlackResponse = async (responseURL, messageBlock) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
+      body:
+        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
       headers: { 'Content-Type': 'application/json' },
     })
   }
 }
 
-const statsTaskingManager = async (responseURL) => {
+const statsProject = async (responseURL, projectSummary) => {
+  console.log('STATS PROJECT')
+
   try {
-    const TM_STATS_URL =
-      'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
-
-    const taskingManagerStatsResponse = await fetch(TM_STATS_URL)
     const {
-      mappersOnline,
-      tasksMapped,
-      totalMappers,
-      totalProjects,
-    } = await taskingManagerStatsResponse.json()
+      projectId,
+      projectInfo,
+      percentMapped,
+      percentValidated,
+      status,
+    } = projectSummary
 
-    const taskingManagerStatsBlock = [
+    const projectStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/`
+
+    const projectStatsResponse = await fetch(projectStatsURL)
+    const projectStats = await projectStatsResponse.json()
+
+    const { totalMappers, totalTasks } = projectStats
+
+    const projectURL = `https://tasks.hotosm.org/project/${projectId}`
+
+    const projectStatsBlock = [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `<${projectURL}|*${projectId} - ${projectInfo.name}*>`,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*${status}* - ${projectInfo.shortDescription}`,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Project Area* - ${projectStats['projectArea(in sq.km)']} sq. km.`,
+        },
+      },
+      {
+        type: 'divider',
+      },
       {
         type: 'section',
         fields: [
           {
             type: 'mrkdwn',
-            text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
+            text: `*Number of Contributors*: ${totalMappers}`,
           },
           {
             type: 'mrkdwn',
-            text: `:round_pushpin: *Number of Mappers*: ${totalMappers}`,
+            text: `*Number of Tasks*: ${totalTasks}`,
           },
           {
             type: 'mrkdwn',
-            text: `:teamwork-dreamwork::teamwork-dreamwork: *Number of Tasks Mapped*: ${tasksMapped}`,
+            text: `*${percentMapped}%* Mapped`,
           },
           {
             type: 'mrkdwn',
-            text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+            text: `*${percentValidated}%* Validated`,
           },
         ],
       },
     ]
 
-    return createSlackResponse(responseURL, taskingManagerStatsBlock)
+    return createSlackResponse(responseURL, projectStatsBlock)
   } catch (error) {
     console.error(error)
 
     await fetch(responseURL, {
       method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
+      body:
+        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
       headers: { 'Content-Type': 'application/json' },
     })
   }
 }
 
-const statsProjectUser = async (responseURL, params) => {
+const statsProjectUser = async (responseURL, projectId, userName) => {
   console.log('STATS PROJECT USER')
 
   try {
-    const [projectId, userName] = params.split('+')
-
-    const projectUserStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/queries/${userName}/`
+    const projectUserStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/queries/${encodeURIComponent(
+      userName
+    )}/`
     const projectURL = `https://tasks.hotosm.org/project/${projectId}`
 
     const projectUserStatsResponse = await fetch(
@@ -175,7 +229,58 @@ const statsProjectUser = async (responseURL, params) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
+      body:
+        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+}
+
+const statsTaskingManager = async (responseURL) => {
+  try {
+    const TM_STATS_URL =
+      'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
+
+    const taskingManagerStatsResponse = await fetch(TM_STATS_URL)
+    const {
+      mappersOnline,
+      tasksMapped,
+      totalMappers,
+      totalProjects,
+    } = await taskingManagerStatsResponse.json()
+
+    const taskingManagerStatsBlock = [
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `:round_pushpin: *Number of Mappers*: ${totalMappers}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `:teamwork-dreamwork::teamwork-dreamwork: *Number of Tasks Mapped*: ${tasksMapped}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+          },
+        ],
+      },
+    ]
+
+    return createSlackResponse(responseURL, taskingManagerStatsBlock)
+  } catch (error) {
+    console.error(error)
+
+    await fetch(responseURL, {
+      method: 'post',
+      body:
+        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
       headers: { 'Content-Type': 'application/json' },
     })
   }
@@ -185,7 +290,10 @@ const statsUser = async (responseURL, userName) => {
   console.log('STATS USER')
 
   try {
-    const userStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/users/${userName}/statistics/`
+    const userStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/users/${encodeURIComponent(
+      userName
+    )}/statistics/`
+    console.log(userStatsURL)
 
     const userStatsResponse = await fetch(userStatsURL, TM_REQUEST_HEADER)
     const userStats = await userStatsResponse.json()
@@ -286,106 +394,8 @@ const statsUser = async (responseURL, userName) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-}
-
-const statsProject = async (responseURL, projectId) => {
-  console.log('STATS PROJECT')
-
-  try {
-    const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/`
-
-    const projectSummaryResponse = await fetch(projectSummaryURL)
-    const projectSummary = await projectSummaryResponse.json()
-
-    if (projectSummary.Error) {
-      const errorBlock = [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `:x: ${projectSummary.Error}`,
-          },
-        },
-      ]
-
-      return createSlackResponse(responseURL, errorBlock)
-    }
-
-    const {
-      projectInfo,
-      percentMapped,
-      percentValidated,
-      status,
-    } = projectSummary
-
-    const projectStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/`
-
-    const projectStatsResponse = await fetch(projectStatsURL)
-    const projectStats = await projectStatsResponse.json()
-
-    const { totalMappers, totalTasks } = projectStats
-
-    const projectURL = `https://tasks.hotosm.org/project/${projectId}`
-
-    const projectStatsBlock = [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `<${projectURL}|*${projectId} - ${projectInfo.name}*>`,
-        },
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `*${status}* - ${projectInfo.shortDescription}`,
-        },
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `*Project Area* - ${projectStats['projectArea(in sq.km)']} sq. km.`,
-        },
-      },
-      {
-        type: 'divider',
-      },
-      {
-        type: 'section',
-        fields: [
-          {
-            type: 'mrkdwn',
-            text: `*Number of Contributors*: ${totalMappers}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `*Number of Tasks*: ${totalTasks}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `*${percentMapped}%* Mapped`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `*${percentValidated}%* Validated`,
-          },
-        ],
-      },
-    ]
-
-    return createSlackResponse(responseURL, projectStatsBlock)
-  } catch (error) {
-    console.error(error)
-
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
+      body:
+        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
       headers: { 'Content-Type': 'application/json' },
     })
   }
@@ -394,19 +404,39 @@ const statsProject = async (responseURL, projectId) => {
 exports.handler = async (event) => {
   const snsMessage = JSON.parse(event.Records[0].Sns.Message)
   const responseURL = decodeURIComponent(snsMessage.response_url)
-  const commandParams = snsMessage.text
+  const commandParameters = snsMessage.text
 
-  if (!commandParams) {
+  if (!commandParameters) {
     return await statsTaskingManager(responseURL)
   }
 
-  if (commandParams.includes('+')) {
-    return await statsProjectUser(commandParams)
-  } else {
-    const commandParamsHasNonDigit = !!commandParams.match(/\D/)
+  const parameterHasSpace = !!commandParameters.match(/\+/)
 
-    commandParamsHasNonDigit
-      ? await statsUser(responseURL, commandParams)
-      : await statsProject(responseURL, commandParams)
+  if (parameterHasSpace) {
+    const spacedParameters = decodeURIComponent(
+      commandParameters.replace(/\+/g, ' ')
+    )
+    console.log(`Spaced Parameters: ${spacedParameters}`)
+    const indexFirstSpace = spacedParameters.indexOf(' ')
+    const firstParameter = spacedParameters.slice(0, indexFirstSpace)
+    console.log(`First Param: ${firstParameter}`)
+
+    if (containsNonDigit(firstParameter)) {
+      return await statsUser(responseURL, spacedParameters)
+    }
+
+    const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
+
+    projectExists(firstParameter)
+      ? await statsProjectUser(responseURL, firstParameter, secondParameter)
+      : await statsUser(responseURL, spacedParameters)
   }
+
+  if (containsNonDigit(commandParameters)) {
+    return await statsUser(responseURL, commandParameters)
+  }
+
+  projectExists(commandParameters)
+    ? await statsProject(responseURL, commandParameters)
+    : await statsUser(responseURL, commandParameters)
 }
