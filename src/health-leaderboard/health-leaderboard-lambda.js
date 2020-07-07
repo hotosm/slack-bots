@@ -1,69 +1,48 @@
 const fetch = require('node-fetch')
 
+const OSM_EPOCH = 22457216 // Wed, 12 Sep 2012 06:56:00 UTC in minutes
 const OVERPASS_API_URL = 'https://overpass-api.de/api/augmented_diff_status'
-
 const OSM_STATS_URL = 'http://osm-stats-production-api.azurewebsites.net/status'
+const DAY_IN_MINUTES = 60 * 24
 
-const parseEvent = (event) => {
-  const snsJSON = JSON.stringify(event.Records[0].Sns)
-  const snsObject = JSON.parse(snsJSON)
-  const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message))
-
-  return decodedSns
+function getDateFromOsmTimestamp(osmTimestamp) {
+  return new Date((osmTimestamp + OSM_EPOCH) * 60000)
 }
 
-const calculateTimestampDifference = (
-  overpassTimestamp,
-  leaderboardTimestamp
-) => {
-  const OSM_EPOCH = 22457216 // Wed, 12 Sep 2012 06:56:00 UTC in minutes
+const getLeaderboardStatus = (overpassTime, leaderboardTime) => {
+  const difference = overpassTime - leaderboardTime
 
-  const overpassEpochTime = (overpassTimestamp + OSM_EPOCH) * 60000
-  const overpassDate = new Date(overpassEpochTime)
-
-  const leaderboardEpochTime = (leaderboardTimestamp + OSM_EPOCH) * 60000
-  const leaderboardDate = new Date(leaderboardEpochTime)
-
-  let daysDifference =
-    (overpassEpochTime - leaderboardEpochTime) / (1000 * 60 * 60 * 24)
-
-  const DIFF_THRESHOLD = 0.0208333 // 30 minutes
-
-  if (daysDifference <= DIFF_THRESHOLD) {
-    daysDifference = 'up-to-date'
-  } else if (daysDifference > DIFF_THRESHOLD && daysDifference < 1) {
-    daysDifference = 'less than 1 day behind'
-  } else {
-    daysDifference = `${Math.floor(daysDifference)} day(s) behind`
+  if (difference <= 30) {
+    return 'up-to-date'
   }
 
-  return {
-    overpassDate: overpassDate,
-    leaderboardDate: leaderboardDate,
-    daysDifference: daysDifference,
+  if (difference < DAY_IN_MINUTES) {
+    return 'less than 1 day behind'
   }
+
+  return `${Math.trunc(difference / DAY_IN_MINUTES)} day(s) behind`
 }
 
 exports.handler = async (event) => {
-  const body = parseEvent(event)
-  const responseURL = body.response_url
+  const snsMessage = JSON.parse(event.Records[0].Sns.Message)
+  const responseURL = decodeURIComponent(snsMessage.response_url)
 
   try {
-    const augmentedDiffsJSON = await fetch(OVERPASS_API_URL)
-    const overpassTimestamp = await augmentedDiffsJSON.json()
+    const overpassResult = await fetch(OVERPASS_API_URL)
+    const latestOverpassTime = await overpassResult.json()
 
-    const osmStatsJSON = await fetch(OSM_STATS_URL)
-    const osmStatsArray = await osmStatsJSON.json()
-    const osmAugmentedDiffs = osmStatsArray.find(
+    const osmStatsResponse = await fetch(OSM_STATS_URL)
+    const osmStats = await osmStatsResponse.json()
+
+    const osmAugmentedDiffs = osmStats.find(
       (object) => object.component === 'augmented diffs'
     )
-    const leaderboardTimestamp = osmAugmentedDiffs.id
+    const latestLeaderboardTime = osmAugmentedDiffs.id
 
-    const {
-      overpassDate,
-      leaderboardDate,
-      daysDifference,
-    } = calculateTimestampDifference(overpassTimestamp, leaderboardTimestamp)
+    const leaderboardStatus = getLeaderboardStatus(
+      latestOverpassTime,
+      latestLeaderboardTime
+    )
 
     const slackMessage = {
       response_type: 'ephemeral',
@@ -72,7 +51,25 @@ exports.handler = async (event) => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `:calendar: Missing Maps Leaderboard data is _${daysDifference}_.\nFeature count and user stats were last updated on *${leaderboardDate}*.\nChangeset and Edit count is from *${overpassDate}*.`,
+            text: `:calendar: Missing Maps Leaderboard data is _${leaderboardStatus}_.`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:small_orange_diamond: Feature count and user stats were last updated on *${getDateFromOsmTimestamp(
+              latestLeaderboardTime
+            )}*`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:small_orange_diamond: Changeset and edit count is from *${getDateFromOsmTimestamp(
+              latestOverpassTime
+            )}*.`,
           },
         },
       ],
@@ -83,16 +80,13 @@ exports.handler = async (event) => {
       body: JSON.stringify(slackMessage),
       headers: { 'Content-Type': 'application/json' },
     })
-
-    return {
-      statusCode: 200,
-    }
   } catch (error) {
     console.error(error)
 
     await fetch(responseURL, {
       method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
+      body:
+        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
       headers: { 'Content-Type': 'application/json' },
     })
   }
