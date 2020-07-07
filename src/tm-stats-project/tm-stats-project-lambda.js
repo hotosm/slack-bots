@@ -8,6 +8,9 @@ const TM_REQUEST_HEADER = {
   },
 }
 
+const ERROR_MESSAGE =
+  'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>'
+
 const containsNonDigit = (parameter) => {
   return !!parameter.match(/\D/)
 }
@@ -19,13 +22,11 @@ const projectExists = async (responseURL, projectId) => {
   if (projectSummaryResponse.status === 500) {
     return await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: ERROR_MESSAGE,
       headers: { 'Content-Type': 'application/json' },
     })
   }
-
-  projectSummaryResponse.status === 200 ? true : false
+  return projectSummaryResponse.status === 200 ? true : false
 }
 
 const transformSecondsToDHMS = (time) => {
@@ -67,19 +68,90 @@ const createSlackResponse = async (responseURL, messageBlock) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: ERROR_MESSAGE,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 }
 
-const statsProject = async (responseURL, projectSummary) => {
+const userErrorMessage = (responseURL) => {
+  const errorBlock = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':x: Please check that the project ID / username is correct.\nUse the `/tm-stats help` command for additional information',
+      },
+    },
+  ]
+
+  return createSlackResponse(responseURL, errorBlock)
+}
+
+const helpMessage = (responseURL) => {
+  const helpBlock = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          'The `/tm-stats` command will return different information depending on what you input:',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':small_blue_diamond: `/tm-stats` for stats on the Tasking Manager home page',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':small_blue_diamond: `/tm-stats [projectID]` for stats on a Tasking Manager project (e.g. `/tm-stats 8172`)',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':small_blue_diamond: `/tm-stats [username]` for stats on a user (e.g. `/tm-stats Charlie Brown`)',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':small_blue_diamond: `/tm-stats [projectID username]` for stats on user contribution in a Tasking Manager project (e.g. `/tm-stats 8172 Charlie Brown`)',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: 'If you need more help, post a message at <#C319P09PB>',
+      },
+    },
+  ]
+
+  return createSlackResponse(responseURL, helpBlock)
+}
+
+const statsProject = async (responseURL, projectId) => {
   console.log('STATS PROJECT')
 
   try {
+    const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/`
+    const projectSummaryResponse = await fetch(projectSummaryURL)
+    const projectSummary = await projectSummaryResponse.json()
+
     const {
-      projectId,
       projectInfo,
       percentMapped,
       percentValidated,
@@ -149,8 +221,7 @@ const statsProject = async (responseURL, projectSummary) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: ERROR_MESSAGE,
       headers: { 'Content-Type': 'application/json' },
     })
   }
@@ -172,18 +243,7 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
     const projectUserStats = await projectUserStatsResponse.json()
 
     if (projectUserStats.Error) {
-      const errorBlock = [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text:
-              ':x: Please check that the project ID and username is correct and you put it in the right format (`/tm-stats [projectID username]`)',
-          },
-        },
-      ]
-
-      return createSlackResponse(responseURL, errorBlock)
+      return userErrorMessage(responseURL)
     }
 
     const {
@@ -197,7 +257,9 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*For project <${projectURL}|${projectId}>, user ${userName} has spent:*`,
+          text: `User *${userName}* has spent *${transformSecondsToDHMS(
+            secondsTotalTimeSpent
+          )}* contributing to <${projectURL}|project ${projectId}>:`,
         },
       },
       {
@@ -205,19 +267,15 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
         fields: [
           {
             type: 'mrkdwn',
-            text: `${transformSecondsToDHMS(secondsSpentMapping)} mapping`,
+            text: `:round_pushpin: ${transformSecondsToDHMS(
+              secondsSpentMapping
+            )} mapping`,
           },
           {
             type: 'mrkdwn',
-            text: `${transformSecondsToDHMS(
+            text: `:white_check_mark: ${transformSecondsToDHMS(
               secondsSpentValidating
             )} validating`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `${transformSecondsToDHMS(
-              secondsTotalTimeSpent
-            )} in total contributing`,
           },
         ],
       },
@@ -229,8 +287,7 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: ERROR_MESSAGE,
       headers: { 'Content-Type': 'application/json' },
     })
   }
@@ -279,8 +336,7 @@ const statsTaskingManager = async (responseURL) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: ERROR_MESSAGE,
       headers: { 'Content-Type': 'application/json' },
     })
   }
@@ -293,23 +349,12 @@ const statsUser = async (responseURL, userName) => {
     const userStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/users/${encodeURIComponent(
       userName
     )}/statistics/`
-    console.log(userStatsURL)
 
     const userStatsResponse = await fetch(userStatsURL, TM_REQUEST_HEADER)
     const userStats = await userStatsResponse.json()
 
     if (userStats.Error) {
-      const errorBlock = [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `:x: ${userStats.Error}`,
-          },
-        },
-      ]
-
-      return createSlackResponse(responseURL, errorBlock)
+      return userErrorMessage(responseURL)
     }
 
     const {
@@ -394,8 +439,7 @@ const statsUser = async (responseURL, userName) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: ERROR_MESSAGE,
       headers: { 'Content-Type': 'application/json' },
     })
   }
@@ -410,16 +454,18 @@ exports.handler = async (event) => {
     return await statsTaskingManager(responseURL)
   }
 
+  if (commandParameters === 'help') {
+    return helpMessage(responseURL)
+  }
+
   const parameterHasSpace = !!commandParameters.match(/\+/)
 
   if (parameterHasSpace) {
     const spacedParameters = decodeURIComponent(
       commandParameters.replace(/\+/g, ' ')
     )
-    console.log(`Spaced Parameters: ${spacedParameters}`)
     const indexFirstSpace = spacedParameters.indexOf(' ')
     const firstParameter = spacedParameters.slice(0, indexFirstSpace)
-    console.log(`First Param: ${firstParameter}`)
 
     if (containsNonDigit(firstParameter)) {
       return await statsUser(responseURL, spacedParameters)
@@ -427,7 +473,7 @@ exports.handler = async (event) => {
 
     const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
 
-    projectExists(firstParameter)
+    return (await projectExists(responseURL, firstParameter))
       ? await statsProjectUser(responseURL, firstParameter, secondParameter)
       : await statsUser(responseURL, spacedParameters)
   }
@@ -436,7 +482,7 @@ exports.handler = async (event) => {
     return await statsUser(responseURL, commandParameters)
   }
 
-  projectExists(commandParameters)
+  return (await projectExists(responseURL, commandParameters))
     ? await statsProject(responseURL, commandParameters)
     : await statsUser(responseURL, commandParameters)
 }
