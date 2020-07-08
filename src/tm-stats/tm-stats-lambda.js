@@ -446,39 +446,49 @@ exports.handler = async (event) => {
   const responseURL = decodeURIComponent(snsMessage.response_url)
   const commandParameters = snsMessage.text
 
-  if (!commandParameters) {
-    return await statsTaskingManager(responseURL)
-  }
-
-  if (commandParameters === 'help') {
-    return helpMessage(responseURL)
-  }
-
-  const parameterHasSpace = !!commandParameters.match(/\+/) // Message payload has '+' in lieu of spaces
-
-  if (parameterHasSpace) {
-    const spacedParameters = decodeURIComponent(
-      commandParameters.replace(/\+/g, ' ')
-    )
-    const indexFirstSpace = spacedParameters.indexOf(' ')
-    const firstParameter = spacedParameters.slice(0, indexFirstSpace)
-
-    if (containsNonDigit(firstParameter)) {
-      return await statsUser(responseURL, spacedParameters)
+  try {
+    if (!commandParameters) {
+      return await statsTaskingManager(responseURL)
     }
 
-    const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
+    if (commandParameters === 'help') {
+      return helpMessage(responseURL)
+    }
 
-    return (await projectExists(responseURL, firstParameter))
-      ? await statsProjectUser(responseURL, firstParameter, secondParameter)
-      : await statsUser(responseURL, spacedParameters)
+    const parameterHasSpace = !!commandParameters.match(/\+/) // Message payload has '+' in lieu of spaces
+
+    if (parameterHasSpace) {
+      const spacedParameters = decodeURIComponent(
+        commandParameters.replace(/\+/g, ' ')
+      )
+      const indexFirstSpace = spacedParameters.indexOf(' ')
+      const firstParameter = spacedParameters.slice(0, indexFirstSpace)
+
+      if (containsNonDigit(firstParameter)) {
+        return await statsUser(responseURL, spacedParameters)
+      }
+
+      const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
+
+      return (await projectExists(responseURL, firstParameter))
+        ? await statsProjectUser(responseURL, firstParameter, secondParameter)
+        : await statsUser(responseURL, spacedParameters)
+    }
+
+    if (containsNonDigit(commandParameters)) {
+      return await statsUser(responseURL, commandParameters)
+    }
+
+    return (await projectExists(responseURL, commandParameters))
+      ? await statsProject(responseURL, commandParameters)
+      : await statsUser(responseURL, commandParameters)
+  } catch (error) {
+    console.error(error)
+
+    await fetch(responseURL, {
+      method: 'post',
+      body: ERROR_MESSAGE,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
-
-  if (containsNonDigit(commandParameters)) {
-    return await statsUser(responseURL, commandParameters)
-  }
-
-  return (await projectExists(responseURL, commandParameters))
-    ? await statsProject(responseURL, commandParameters)
-    : await statsUser(responseURL, commandParameters)
 }
