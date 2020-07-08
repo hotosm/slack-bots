@@ -103,14 +103,14 @@ const createBlock = (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `There are *${changesetCount} changesets* under <${osmChaURL}|${filterDescriptor}>.`,
+          text: `:page_with_curl: There are *${changesetCount} changesets* under <${osmChaURL}|${filterDescriptor}> :page_with_curl:`,
         },
       },
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*${suspectChangesetCount} or ${suspectChangesetPercentage}% of changesets* have been flagged as suspicious.\nHere is the breakdown of flags:`,
+          text: `:warning: *${suspectChangesetCount} or ${suspectChangesetPercentage}% of changesets* have been flagged as suspicious.\n:small_red_triangle: Here is the breakdown of flags: :small_red_triangle_down:`,
         },
       },
       ...flagSections,
@@ -312,9 +312,9 @@ exports.handler = async (event) => {
     const spacedParameters = decodeURIComponent(
       commandParameters.replace(/\+/g, ' ')
     )
-    const parameterHasHash = !!spacedParameters.match(/#/)
+    const parameterHasNonDigit = !!spacedParameters.match(/\D/)
 
-    parameterHasHash
+    parameterHasNonDigit
       ? await hashtagChangesets(responseURL, spacedParameters)
       : await projectChangesets(responseURL, commandParameters)
   } catch (error) {
