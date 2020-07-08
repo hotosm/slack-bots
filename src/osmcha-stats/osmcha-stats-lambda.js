@@ -10,7 +10,7 @@ const OSMCHA_REQUEST_HEADER = {
 const ERROR_MESSAGE = {
   response_type: 'ephemeral',
   text:
-    'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
 }
 
 const HELP_BLOCK = {
@@ -116,7 +116,7 @@ const createBlock = (
     ],
   }
 
-  return JSON.stringify(messageBlock)
+  return messageBlock
 }
 
 const createSlackResponse = async (responseURL, message) => {
@@ -130,23 +130,31 @@ const createSlackResponse = async (responseURL, message) => {
     })
   } catch (error) {
     console.error(error)
-
-    await createSlackResponse(responseURL, ERROR_MESSAGE)
   }
 }
 
-const changesetStats = async (osmChaSuspectURL, osmChaStatsURL) => {
-  const [osmChaSuspectRes, osmChaProjectStatsRes] = await Promise.all([
-    fetch(osmChaSuspectURL, OSMCHA_REQUEST_HEADER),
-    fetch(osmChaStatsURL, OSMCHA_REQUEST_HEADER),
-  ])
+const changesetStats = async (
+  osmChaSuspectURL,
+  osmChaStatsURL,
+  responseURL
+) => {
+  try {
+    const [osmChaSuspectRes, osmChaProjectStatsRes] = await Promise.all([
+      fetch(osmChaSuspectURL, OSMCHA_REQUEST_HEADER),
+      fetch(osmChaStatsURL, OSMCHA_REQUEST_HEADER),
+    ])
 
-  const [{ count }, { changesets, reasons }] = await Promise.all([
-    osmChaSuspectRes.json(),
-    osmChaProjectStatsRes.json(),
-  ])
+    const [{ count }, { changesets, reasons }] = await Promise.all([
+      osmChaSuspectRes.json(),
+      osmChaProjectStatsRes.json(),
+    ])
 
-  return { count, changesets, reasons }
+    return { count, changesets, reasons }
+  } catch (error) {
+    console.error(error)
+
+    await createSlackResponse(responseURL, ERROR_MESSAGE)
+  }
 }
 
 const hashtagChangesets = async (responseURL, hashtags) => {
@@ -155,13 +163,12 @@ const hashtagChangesets = async (responseURL, hashtags) => {
   try {
     const encodedHashtags = encodeURIComponent(hashtags)
     const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedHashtags}`
-    console.log(`SUSPECT: ${osmChaSuspectURL}`)
     const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedHashtags}`
-    console.log(`STATS: ${osmChaStatsURL}`)
 
     const { count, changesets, reasons } = await changesetStats(
       osmChaSuspectURL,
-      osmChaStatsURL
+      osmChaStatsURL,
+      responseURL
     )
 
     const filterDescriptor = `comments: ${hashtags}`
@@ -220,7 +227,8 @@ const projectChangesets = async (responseURL, projectId) => {
 
     const { count, changesets, reasons } = await changesetStats(
       osmChaSuspectURL,
-      osmChaStatsURL
+      osmChaStatsURL,
+      responseURL
     )
 
     const projectTitle = `project: #${projectId} - ${projectInfo.name}`
@@ -271,7 +279,6 @@ exports.handler = async (event) => {
       commandParameters.replace(/\+/g, ' ')
     )
     const parameterHasHash = !!spacedParameters.match(/#/)
-    console.log(`PARAMETER HAS HASH? ${parameterHasHash}`)
 
     parameterHasHash
       ? await hashtagChangesets(responseURL, spacedParameters)
