@@ -7,6 +7,9 @@ const OSMCHA_REQUEST_HEADER = {
   },
 }
 
+const ERROR_MESSAGE =
+  'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>' // move to Parameter Store so it can be used for all generic errors?
+
 const groupFlagsIntoSections = (flags, size) => {
   const flagsArray = []
 
@@ -72,30 +75,17 @@ const createBlock = (
   ]
 }
 
-const parseEvent = (event) => {
-  const snsJSON = JSON.stringify(event.Records[0].Sns)
-  const snsObject = JSON.parse(snsJSON)
-  const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message))
-
-  return decodedSns
-}
-
-exports.handler = async (event) => {
-  const body = parseEvent(event)
-  const responseURL = body.response_url
-  const projectID = body.text
-
+const projectStats = async (responseURL, projectId) => {
   try {
-    const taskingManagerURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectID}/?as_file=false&abbreviated=false`
+    const taskingManagerURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/?as_file=false&abbreviated=false`
 
     const taskingManagerProjectJSON = await fetch(taskingManagerURL)
-    const taskingManagerProjectObj = await taskingManagerProjectJSON.json()
     let {
       projectInfo,
       aoiBBOX,
       changesetComment,
       created: dateCreated,
-    } = taskingManagerProjectObj
+    } = await taskingManagerProjectJSON.json()
 
     aoiBBOX = aoiBBOX.join()
     changesetComment = encodeURIComponent(changesetComment)
@@ -107,8 +97,7 @@ exports.handler = async (event) => {
       osmChaSuspectURL,
       OSMCHA_REQUEST_HEADER
     )
-    const osmChaSuspectObj = await osmChaSuspectJSON.json()
-    const { count: suspectChangesetCount } = osmChaSuspectObj
+    const { count: suspectChangesetCount } = await osmChaSuspectJSON.json()
 
     const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?area_lt=2&date__gte=${dateCreated}&comment=${changesetComment}&in_bbox=${aoiBBOX}`
 
@@ -122,7 +111,7 @@ exports.handler = async (event) => {
     const slackMessage = {
       response_type: 'ephemeral',
       blocks: createBlock(
-        projectID,
+        projectId,
         projectInfo,
         changesets,
         reasons,
@@ -135,16 +124,30 @@ exports.handler = async (event) => {
       body: JSON.stringify(slackMessage),
       headers: { 'Content-Type': 'application/json' },
     })
-
-    return {
-      statusCode: 200,
-    }
   } catch (error) {
     console.error(error)
 
     await fetch(responseURL, {
       method: 'post',
       body: JSON.stringify('Something went wrong with your request'),
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+}
+
+exports.handler = async (event) => {
+  const snsMessage = JSON.parse(event.Records[0].Sns.Message)
+  const responseURL = decodeURIComponent(snsMessage.response_url)
+  const commandParameters = snsMessage.text
+
+  try {
+    await projectStats(responseURL, commandParameters)
+  } catch (error) {
+    console.error(error)
+
+    await fetch(responseURL, {
+      method: 'post',
+      body: ERROR_MESSAGE,
       headers: { 'Content-Type': 'application/json' },
     })
   }
