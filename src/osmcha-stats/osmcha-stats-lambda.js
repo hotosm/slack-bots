@@ -7,8 +7,48 @@ const OSMCHA_REQUEST_HEADER = {
   },
 }
 
-const ERROR_MESSAGE =
-  'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>' // move to Parameter Store so it can be used for all generic errors?
+const ERROR_MESSAGE = {
+  response_type: 'ephemeral',
+  text:
+    'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
+}
+
+const HELP_BLOCK = {
+  response_type: 'ephemeral',
+  blocks: [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          'Using the `/osmcha-stats` command, you can get stats on changesets based on either a project ID or hashtags:',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':small_blue_diamond: `/osmcha-stats [projectID]` for stats on changesets of a Tasking Manager project (e.g. `/osmcha-stats 8172`)',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':small_blue_diamond: `/osmcha-stats [hashtags]` for stats on changesets with specific hashtags. Separate multiple hashtags with a space. (e.g. `/osmcha-stats #covid19 #hotosm-project-8272`)',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: 'If you need more help, post a message at <#C319P09PB>',
+      },
+    },
+  ],
+}
 
 const groupFlagsIntoSections = (flags, size) => {
   const flagsArray = []
@@ -32,8 +72,7 @@ const groupFlagsIntoSections = (flags, size) => {
 }
 
 const createBlock = (
-  projectId,
-  projectInfo,
+  filterDescriptor,
   changesetCount,
   changesetFlags,
   suspectChangesetCount
@@ -48,7 +87,7 @@ const createBlock = (
     if (flag.changesets != 0) {
       accumulator.push({
         type: 'mrkdwn',
-        text: `*${flag.name}*: ${flag.changesets} changesets`,
+        text: `*${flag.name}*: ${flag.changesets}`,
       })
     }
     return accumulator
@@ -56,82 +95,145 @@ const createBlock = (
 
   const flagSections = groupFlagsIntoSections(flagArray, ARRAY_COUNT)
 
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `There are *${changesetCount} changesets* for #${projectId} - ${projectInfo.name}.`,
+  const messageBlock = {
+    response_type: 'ephemeral',
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `There are *${changesetCount} changesets* under ${filterDescriptor}.`,
+        },
       },
-    },
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `*${suspectChangesetCount} or ${suspectChangesetPercentage}% of changesets* have been flagged as suspicious.\nHere is the breakdown of flags:`,
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*${suspectChangesetCount} or ${suspectChangesetPercentage}% of changesets* have been flagged as suspicious.\nHere is the breakdown of flags:`,
+        },
       },
-    },
-    ...flagSections,
-  ]
+      ...flagSections,
+    ],
+  }
+
+  return JSON.stringify(messageBlock)
 }
 
-const projectStats = async (responseURL, projectId) => {
+const createSlackResponse = async (responseURL, message) => {
+  try {
+    await fetch(responseURL, {
+      method: 'post',
+      body: JSON.stringify(message),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+  } catch (error) {
+    console.error(error)
+
+    await createSlackResponse(responseURL, ERROR_MESSAGE)
+  }
+}
+
+const changesetStats = async (osmChaSuspectURL, osmChaStatsURL) => {
+  const [osmChaSuspectRes, osmChaProjectStatsRes] = await Promise.all([
+    fetch(osmChaSuspectURL, OSMCHA_REQUEST_HEADER),
+    fetch(osmChaStatsURL, OSMCHA_REQUEST_HEADER),
+  ])
+
+  const [{ count }, { changesets, reasons }] = await Promise.all([
+    osmChaSuspectRes.json(),
+    osmChaProjectStatsRes.json(),
+  ])
+
+  return { count, changesets, reasons }
+}
+
+const hashtagChangesets = async (responseURL, hashtags) => {
+  console.log('HASHTAG')
+
+  try {
+    const encodedHashtags = encodeURIComponent(hashtags)
+    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedHashtags}`
+    console.log(`SUSPECT: ${osmChaSuspectURL}`)
+    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedHashtags}`
+    console.log(`STATS: ${osmChaStatsURL}`)
+
+    const { count, changesets, reasons } = await changesetStats(
+      osmChaSuspectURL,
+      osmChaStatsURL
+    )
+
+    const filterDescriptor = `comments: ${hashtags}`
+
+    const hashtagBlock = createBlock(
+      filterDescriptor,
+      changesets,
+      reasons,
+      count
+    )
+
+    await createSlackResponse(responseURL, hashtagBlock)
+
+    return
+  } catch (error) {
+    console.error(error)
+
+    await createSlackResponse(responseURL, ERROR_MESSAGE)
+  }
+}
+
+const projectChangesets = async (responseURL, projectId) => {
+  console.log('PROJECT')
+
   try {
     const taskingManagerURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/?as_file=false&abbreviated=false`
 
-    const taskingManagerProjectJSON = await fetch(taskingManagerURL)
+    const tmProjectRes = await fetch(taskingManagerURL)
+
+    if (tmProjectRes.status != 200) {
+      const { Error } = await tmProjectRes.json()
+      const errorMessage = {
+        response_type: 'ephemeral',
+        text:
+          `:x: ${Error}.\n` +
+          'Use the `/osmcha-stats help` command for help on using this command.',
+      }
+
+      await createSlackResponse(responseURL, errorMessage)
+      return
+    }
+
     let {
       projectInfo,
       aoiBBOX,
       changesetComment,
       created: dateCreated,
-    } = await taskingManagerProjectJSON.json()
+    } = await tmProjectRes.json()
 
     aoiBBOX = aoiBBOX.join()
     changesetComment = encodeURIComponent(changesetComment)
     dateCreated = dateCreated.substring(0, 10)
 
     const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?area_lt=2&date__gte=${dateCreated}&comment=${changesetComment}&in_bbox=${aoiBBOX}`
-
-    const osmChaSuspectJSON = await fetch(
-      osmChaSuspectURL,
-      OSMCHA_REQUEST_HEADER
-    )
-    const { count: suspectChangesetCount } = await osmChaSuspectJSON.json()
-
     const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?area_lt=2&date__gte=${dateCreated}&comment=${changesetComment}&in_bbox=${aoiBBOX}`
 
-    const osmChaProjectStatsJSON = await fetch(
-      osmChaStatsURL,
-      OSMCHA_REQUEST_HEADER
+    const { count, changesets, reasons } = await changesetStats(
+      osmChaSuspectURL,
+      osmChaStatsURL
     )
-    const osmChaProjectStatsObj = await osmChaProjectStatsJSON.json()
-    const { changesets, reasons } = osmChaProjectStatsObj
 
-    const slackMessage = {
-      response_type: 'ephemeral',
-      blocks: createBlock(
-        projectId,
-        projectInfo,
-        changesets,
-        reasons,
-        suspectChangesetCount
-      ),
-    }
+    const projectTitle = `project: #${projectId} - ${projectInfo.name}`
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify(slackMessage),
-      headers: { 'Content-Type': 'application/json' },
-    })
+    const projectBlock = createBlock(projectTitle, changesets, reasons, count)
+
+    await createSlackResponse(responseURL, projectBlock)
+
+    return
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await createSlackResponse(responseURL, ERROR_MESSAGE)
   }
 }
 
@@ -139,16 +241,44 @@ exports.handler = async (event) => {
   const snsMessage = JSON.parse(event.Records[0].Sns.Message)
   const responseURL = decodeURIComponent(snsMessage.response_url)
   const commandParameters = snsMessage.text
+  console.log(`PARAMETERS: ${commandParameters}`)
 
   try {
-    await projectStats(responseURL, commandParameters)
+    if (!commandParameters) {
+      const missingParameterBlock = {
+        response_type: 'ephemeral',
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text:
+                ':x: Please input either a project ID or hashtags to filter changesets.\nUse the `/osmcha-stats help` command for additional information.',
+            },
+          },
+        ],
+      }
+      await createSlackResponse(responseURL, missingParameterBlock)
+      return
+    }
+
+    if (commandParameters === 'help') {
+      await createSlackResponse(responseURL, HELP_BLOCK)
+      return
+    }
+
+    const spacedParameters = decodeURIComponent(
+      commandParameters.replace(/\+/g, ' ')
+    )
+    const parameterHasHash = !!spacedParameters.match(/#/)
+    console.log(`PARAMETER HAS HASH? ${parameterHasHash}`)
+
+    parameterHasHash
+      ? await hashtagChangesets(responseURL, spacedParameters)
+      : await projectChangesets(responseURL, commandParameters)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await createSlackResponse(responseURL, ERROR_MESSAGE)
   }
 }
