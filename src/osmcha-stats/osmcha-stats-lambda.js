@@ -75,7 +75,8 @@ const createBlock = (
   filterDescriptor,
   changesetCount,
   changesetFlags,
-  suspectChangesetCount
+  suspectChangesetCount,
+  osmChaURL
 ) => {
   const ARRAY_COUNT = 10
 
@@ -102,7 +103,7 @@ const createBlock = (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `There are *${changesetCount} changesets* under ${filterDescriptor}.`,
+          text: `There are *${changesetCount} changesets* under <${osmChaURL}|${filterDescriptor}>.`,
         },
       },
       {
@@ -117,6 +118,29 @@ const createBlock = (
   }
 
   return messageBlock
+}
+
+const createOsmChaUrl = (aoiBBOX, changesetComment, dateCreated) => {
+  const BASE_URL = 'https://osmcha.org/'
+  const AREA_LT_VALUE = 2
+
+  const filterArray = (filter) => {
+    return [
+      {
+        label: filter,
+        value: filter,
+      },
+    ]
+  }
+
+  const filters = {
+    in_bbox: filterArray(aoiBBOX),
+    area_lt: filterArray(AREA_LT_VALUE),
+    date__gte: filterArray(dateCreated),
+    comment: filterArray(changesetComment),
+  }
+
+  return `${BASE_URL}?filters=${encodeURIComponent(JSON.stringify(filters))}`
 }
 
 const createSlackResponse = async (responseURL, message) => {
@@ -219,11 +243,14 @@ const projectChangesets = async (responseURL, projectId) => {
     } = await tmProjectRes.json()
 
     aoiBBOX = aoiBBOX.join()
-    changesetComment = encodeURIComponent(changesetComment)
     dateCreated = dateCreated.substring(0, 10)
 
-    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?area_lt=2&date__gte=${dateCreated}&comment=${changesetComment}&in_bbox=${aoiBBOX}`
-    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?area_lt=2&date__gte=${dateCreated}&comment=${changesetComment}&in_bbox=${aoiBBOX}`
+    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
+      changesetComment
+    )}&in_bbox=${aoiBBOX}`
+    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
+      changesetComment
+    )}&in_bbox=${aoiBBOX}`
 
     const { count, changesets, reasons } = await changesetStats(
       osmChaSuspectURL,
@@ -232,8 +259,15 @@ const projectChangesets = async (responseURL, projectId) => {
     )
 
     const projectTitle = `project: #${projectId} - ${projectInfo.name}`
+    const osmChaURL = createOsmChaUrl(aoiBBOX, changesetComment, dateCreated)
 
-    const projectBlock = createBlock(projectTitle, changesets, reasons, count)
+    const projectBlock = createBlock(
+      projectTitle,
+      changesets,
+      reasons,
+      count,
+      osmChaURL
+    )
 
     await createSlackResponse(responseURL, projectBlock)
 
