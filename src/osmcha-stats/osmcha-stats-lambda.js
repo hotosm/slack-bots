@@ -131,7 +131,7 @@ const createBlock = (
 }
 
 const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
-  const BASE_URL = 'https://osmcha.org/'
+  const BASE_URL = 'https://osmcha.org/' // move to Parameter Store
   const AREA_LT_VALUE = 2
 
   const filterArray = (filter) => {
@@ -155,7 +155,7 @@ const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
   return `${BASE_URL}?filters=${encodeURIComponent(JSON.stringify(filters))}`
 }
 
-const createSlackResponse = async (responseURL, message) => {
+const sendToSlack = async (responseURL, message) => {
   try {
     await fetch(responseURL, {
       method: 'post',
@@ -190,15 +190,15 @@ const changesetData = async (osmChaSuspectURL, osmChaStatsURL, responseURL) => {
   } catch (error) {
     console.error(error)
 
-    await createSlackResponse(responseURL, ERROR_MESSAGE)
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
 
 const commentChangesets = async (responseURL, changesetComment) => {
   try {
     const encodedComment = encodeURIComponent(changesetComment)
-    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedComment}`
-    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedComment}`
+    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedComment}` // move base URL to Parameter Store
+    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedComment}` // move base URL to Parameter Store
 
     const { count, changesets, reasons } = await changesetData(
       osmChaSuspectURL,
@@ -217,19 +217,19 @@ const commentChangesets = async (responseURL, changesetComment) => {
       osmChaURL
     )
 
-    await createSlackResponse(responseURL, commentBlock)
+    await sendToSlack(responseURL, commentBlock)
 
     return
   } catch (error) {
     console.error(error)
 
-    await createSlackResponse(responseURL, ERROR_MESSAGE)
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
 
 const projectChangesets = async (responseURL, projectId) => {
   try {
-    const taskingManagerURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/?as_file=false&abbreviated=false`
+    const taskingManagerURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/?as_file=false&abbreviated=false` // move base URL to Parameter Store
 
     const tmProjectRes = await fetch(taskingManagerURL)
 
@@ -242,7 +242,7 @@ const projectChangesets = async (responseURL, projectId) => {
           'Use the `/osmcha-stats help` command for help on using this command.',
       }
 
-      await createSlackResponse(responseURL, errorMessage)
+      await sendToSlack(responseURL, errorMessage)
       return
     }
 
@@ -258,10 +258,10 @@ const projectChangesets = async (responseURL, projectId) => {
 
     const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
       changesetComment
-    )}&in_bbox=${aoiBBOX}`
+    )}&in_bbox=${aoiBBOX}` // move base URL to Parameter Store
     const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
       changesetComment
-    )}&in_bbox=${aoiBBOX}`
+    )}&in_bbox=${aoiBBOX}` // move base URL to Parameter Store
 
     const { count, changesets, reasons } = await changesetData(
       osmChaSuspectURL,
@@ -284,13 +284,13 @@ const projectChangesets = async (responseURL, projectId) => {
       osmChaURL
     )
 
-    await createSlackResponse(responseURL, projectBlock)
+    await sendToSlack(responseURL, projectBlock)
 
     return
   } catch (error) {
     console.error(error)
 
-    await createSlackResponse(responseURL, ERROR_MESSAGE)
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
 
@@ -314,12 +314,12 @@ exports.handler = async (event) => {
           },
         ],
       }
-      await createSlackResponse(responseURL, missingParameterBlock)
+      await sendToSlack(responseURL, missingParameterBlock)
       return
     }
 
     if (commandParameters === 'help') {
-      await createSlackResponse(responseURL, HELP_BLOCK)
+      await sendToSlack(responseURL, HELP_BLOCK)
       return
     }
 
@@ -334,6 +334,6 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(error)
 
-    await createSlackResponse(responseURL, ERROR_MESSAGE)
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
