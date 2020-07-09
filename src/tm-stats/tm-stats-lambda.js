@@ -298,6 +298,12 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
 const statsTaskingManager = async (responseURL) => {
   try {
     const taskingManagerStatsRes = await fetch(TM_STATS_URL)
+
+    if (taskingManagerStatsRes.status != 200) {
+      await sendToSlack(responseURL, ERROR_MESSAGE)
+      return
+    }
+
     const {
       mappersOnline,
       tasksMapped,
