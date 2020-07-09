@@ -12,10 +12,7 @@ const createBlock = (status, mappersOnline, totalProjects) => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text:
-          status === 'healthy'
-            ? ':white_check_mark: *The Tasking Manager is operational*'
-            : ':heavy_exclamation_mark: *The Tasking Manager cannot be reached*',
+        text: ':white_check_mark: *The Tasking Manager is operational*',
       },
     },
     {
@@ -39,13 +36,27 @@ exports.handler = async (event) => {
   const responseURL = decodeURIComponent(snsMessage.response_url)
 
   try {
-    const [tmStatusResult, tmStatisticsResult] = await Promise.all([
+    const [tmStatusRes, tmStatisticsRes] = await Promise.all([
       fetch(TM_STATUS_URL),
       fetch(TM_STATISTICS_URL),
     ])
+
+    if (tmStatusRes.status != 200 || tmStatisticsRes.status != 200) {
+      await fetch(responseURL, {
+        method: 'post',
+        body: {
+          response_type: 'ephemeral',
+          text:
+            ':heavy_exclamation_mark: The Tasking Manager cannot be reached right now. Please try again and if the error persists, post a message at <#C319P09PB>',
+        },
+        headers: { 'Content-Type': 'application/json' },
+      })
+      return
+    }
+
     const [{ status }, { mappersOnline, totalProjects }] = await Promise.all([
-      tmStatusResult.json(),
-      tmStatisticsResult.json(),
+      tmStatusRes.json(),
+      tmStatisticsRes.json(),
     ])
 
     const slackMessage = {
@@ -63,8 +74,11 @@ exports.handler = async (event) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: {
+        response_type: 'ephemeral',
+        text:
+          ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      },
       headers: { 'Content-Type': 'application/json' },
     })
   }
