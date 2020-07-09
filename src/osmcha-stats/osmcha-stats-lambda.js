@@ -78,6 +78,16 @@ const createBlock = (
   suspectChangesetCount,
   osmChaURL
 ) => {
+  if (changesetCount === 0) {
+    const noChangesetBlock = {
+      response_type: 'ephemeral',
+      text:
+        `:x: There are *${changesetCount} changesets* under <${osmChaURL}|${filterDescriptor}>\n` +
+        'Use the `/osmcha-stats help` command for help on using this command.',
+    }
+    return noChangesetBlock
+  }
+
   const ARRAY_COUNT = 10
 
   const suspectChangesetPercentage = Math.round(
@@ -103,7 +113,7 @@ const createBlock = (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `:page_with_curl: There are *${changesetCount} changesets* under <${osmChaURL}|${filterDescriptor}> :page_with_curl:`,
+          text: `:page_with_curl: There are *${changesetCount} changesets* under <${osmChaURL}|${filterDescriptor}>`,
         },
       },
       {
@@ -120,7 +130,7 @@ const createBlock = (
   return messageBlock
 }
 
-const createOsmChaUrl = (aoiBBOX, changesetComment, dateCreated) => {
+const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
   const BASE_URL = 'https://osmcha.org/'
   const AREA_LT_VALUE = 2
 
@@ -134,10 +144,12 @@ const createOsmChaUrl = (aoiBBOX, changesetComment, dateCreated) => {
   }
 
   const filters = {
-    in_bbox: filterArray(aoiBBOX),
-    area_lt: filterArray(AREA_LT_VALUE),
-    date__gte: filterArray(dateCreated),
-    comment: filterArray(changesetComment),
+    ...(aoiBBOX ? { in_bbox: filterArray(aoiBBOX) } : {}),
+    ...(aoiBBOX ? { area_lt: filterArray(AREA_LT_VALUE) } : {}),
+    ...(dateCreated
+      ? { date__gte: filterArray(dateCreated) }
+      : { date__gte: filterArray('') }),
+    ...(changesetComment ? { comment: filterArray(changesetComment) } : {}),
   }
 
   return `${BASE_URL}?filters=${encodeURIComponent(JSON.stringify(filters))}`
@@ -163,14 +175,14 @@ const changesetStats = async (
   responseURL
 ) => {
   try {
-    const [osmChaSuspectRes, osmChaProjectStatsRes] = await Promise.all([
+    const [osmChaSuspectRes, osmChaStatsRes] = await Promise.all([
       fetch(osmChaSuspectURL, OSMCHA_REQUEST_HEADER),
       fetch(osmChaStatsURL, OSMCHA_REQUEST_HEADER),
     ])
 
     const [{ count }, { changesets, reasons }] = await Promise.all([
       osmChaSuspectRes.json(),
-      osmChaProjectStatsRes.json(),
+      osmChaStatsRes.json(),
     ])
 
     return { count, changesets, reasons }
@@ -181,13 +193,13 @@ const changesetStats = async (
   }
 }
 
-const hashtagChangesets = async (responseURL, hashtags) => {
+const commentChangesets = async (responseURL, changesetComment) => {
   console.log('HASHTAG')
 
   try {
-    const encodedHashtags = encodeURIComponent(hashtags)
-    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedHashtags}`
-    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedHashtags}`
+    const encodedComments = encodeURIComponent(changesetComment)
+    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedComments}`
+    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedComments}`
 
     const { count, changesets, reasons } = await changesetStats(
       osmChaSuspectURL,
@@ -195,16 +207,18 @@ const hashtagChangesets = async (responseURL, hashtags) => {
       responseURL
     )
 
-    const filterDescriptor = `comments: ${hashtags}`
+    const filterDescriptor = `comments: ${changesetComment}`
+    const osmChaURL = createOsmChaUrl({ changesetComment })
 
-    const hashtagBlock = createBlock(
+    const commentBlock = createBlock(
       filterDescriptor,
       changesets,
       reasons,
-      count
+      count,
+      osmChaURL
     )
 
-    await createSlackResponse(responseURL, hashtagBlock)
+    await createSlackResponse(responseURL, commentBlock)
 
     return
   } catch (error) {
@@ -258,11 +272,15 @@ const projectChangesets = async (responseURL, projectId) => {
       responseURL
     )
 
-    const projectTitle = `project: #${projectId} - ${projectInfo.name}`
-    const osmChaURL = createOsmChaUrl(aoiBBOX, changesetComment, dateCreated)
+    const filterDescriptor = `project: #${projectId} - ${projectInfo.name}`
+    const osmChaURL = createOsmChaUrl({
+      aoiBBOX,
+      changesetComment,
+      dateCreated,
+    })
 
     const projectBlock = createBlock(
-      projectTitle,
+      filterDescriptor,
       changesets,
       reasons,
       count,
@@ -315,7 +333,7 @@ exports.handler = async (event) => {
     const parameterHasNonDigit = !!spacedParameters.match(/\D/)
 
     parameterHasNonDigit
-      ? await hashtagChangesets(responseURL, spacedParameters)
+      ? await commentChangesets(responseURL, spacedParameters)
       : await projectChangesets(responseURL, commandParameters)
   } catch (error) {
     console.error(error)
