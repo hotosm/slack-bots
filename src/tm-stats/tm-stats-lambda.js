@@ -1,5 +1,8 @@
 const fetch = require('node-fetch')
 
+const TM_STATS_URL =
+  'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true' // move base URL to Parameter Store
+
 const TM_REQUEST_HEADER = {
   headers: {
     'Content-Type': 'application/json',
@@ -8,74 +11,15 @@ const TM_REQUEST_HEADER = {
   },
 }
 
-const ERROR_MESSAGE =
-  'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>' // move to Parameter Store so it can be used for all generic errors?
-
-const containsNonDigit = (parameter) => {
-  return !!parameter.match(/\D/)
+const ERROR_MESSAGE = {
+  response_type: 'ephemeral',
+  text:
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
 }
 
-const projectExists = async (responseURL, projectId) => {
-  const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/`
-  const projectSummaryResponse = await fetch(projectSummaryURL)
-
-  if (projectSummaryResponse.status === 500) {
-    return await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-  return projectSummaryResponse.status === 200 ? true : false
-}
-
-const transformSecondsToDHMS = (time) => {
-  time = Number(time)
-
-  if (time === 0) {
-    return '0 time'
-  }
-
-  const days = Math.floor(time / (3600 * 24))
-  const hours = Math.floor((time % (3600 * 24)) / 3600)
-  const minutes = Math.floor((time % 3600) / 60)
-  const seconds = Math.floor(time % 60)
-
-  const daysDisplay = days > 0 ? days + (days == 1 ? ' day ' : ' days ') : ''
-  const hoursDisplay =
-    hours > 0 ? hours + (hours == 1 ? ' hour ' : ' hours ') : ''
-  const minutesDisplay =
-    minutes > 0 ? minutes + (minutes == 1 ? ' minute ' : ' minutes ') : ''
-  const secondsDisplay =
-    seconds > 0 ? seconds + (seconds == 1 ? ' second' : ' seconds') : ''
-
-  return daysDisplay + hoursDisplay + minutesDisplay + secondsDisplay
-}
-
-const createSlackResponse = async (responseURL, messageBlock) => {
-  try {
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify({
-        blocks: messageBlock,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-  } catch (error) {
-    console.error(error)
-
-    await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-}
-
-const userErrorMessage = (responseURL) => {
-  const errorBlock = [
+const USER_ERROR_BLOCK = {
+  response_type: 'ephemeral',
+  blocks: [
     {
       type: 'section',
       text: {
@@ -84,13 +28,12 @@ const userErrorMessage = (responseURL) => {
           ':x: Please check that the project ID / username is correct.\nUse the `/tm-stats help` command for additional information.',
       },
     },
-  ]
-
-  return createSlackResponse(responseURL, errorBlock)
+  ],
 }
 
-const helpMessage = (responseURL) => {
-  const helpBlock = [
+const HELP_BLOCK = {
+  response_type: 'ephemeral',
+  blocks: [
     {
       type: 'section',
       text: {
@@ -138,90 +81,146 @@ const helpMessage = (responseURL) => {
         text: 'If you need more help, post a message at <#C319P09PB>',
       },
     },
-  ]
+  ],
+}
 
-  return createSlackResponse(responseURL, helpBlock)
+const containsNonDigit = (parameter) => {
+  return !!parameter.match(/\D/)
+}
+
+const transformSecondsToDHMS = (time) => {
+  time = Number(time)
+
+  if (time === 0) {
+    return '0 time'
+  }
+
+  const days = Math.floor(time / (3600 * 24))
+  const hours = Math.floor((time % (3600 * 24)) / 3600)
+  const minutes = Math.floor((time % 3600) / 60)
+  const seconds = Math.floor(time % 60)
+
+  const daysDisplay = days > 0 ? days + (days == 1 ? ' day ' : ' days ') : ''
+  const hoursDisplay =
+    hours > 0 ? hours + (hours == 1 ? ' hour ' : ' hours ') : ''
+  const minutesDisplay =
+    minutes > 0 ? minutes + (minutes == 1 ? ' minute ' : ' minutes ') : ''
+  const secondsDisplay =
+    seconds > 0 ? seconds + (seconds == 1 ? ' second' : ' seconds') : ''
+
+  return daysDisplay + hoursDisplay + minutesDisplay + secondsDisplay
+}
+
+const sendToSlack = async (responseURL, message) => {
+  try {
+    await fetch(responseURL, {
+      method: 'post',
+      body: JSON.stringify(message),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const projectExists = async (responseURL, projectId) => {
+  const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/` // move base URL to Parameter Store
+  const projectSummaryRes = await fetch(projectSummaryURL)
+
+  try {
+    if (projectSummaryRes.status === 500) {
+      await sendToSlack(responseURL, ERROR_MESSAGE)
+      return
+    }
+
+    return projectSummaryRes.status === 200 ? true : false
+  } catch (error) {
+    console.error(error)
+
+    await sendToSlack(responseURL, ERROR_MESSAGE)
+  }
 }
 
 const statsProject = async (responseURL, projectId) => {
   try {
-    const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/`
-    const projectSummaryResponse = await fetch(projectSummaryURL)
-    const projectSummary = await projectSummaryResponse.json()
+    const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/` // move base URL to Parameter Store
+    const projectStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/` // move base URL to Parameter Store
 
-    const {
-      projectInfo,
-      percentMapped,
-      percentValidated,
-      status,
-    } = projectSummary
+    const [projectSummaryRes, projectStatsRes] = await Promise.all([
+      fetch(projectSummaryURL),
+      fetch(projectStatsURL),
+    ])
 
-    const projectStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/`
+    if (projectSummaryRes.status != 200 || projectStatsRes.status != 200) {
+      await sendToSlack(responseURL, ERROR_MESSAGE)
+      return
+    }
 
-    const projectStatsResponse = await fetch(projectStatsURL)
-    const projectStats = await projectStatsResponse.json()
+    const [
+      { projectInfo, percentMapped, percentValidated, status },
+      { 'projectArea(in sq.km)': projectArea, totalMappers, totalTasks },
+    ] = await Promise.all([projectSummaryRes.json(), projectStatsRes.json()])
 
-    const { totalMappers, totalTasks } = projectStats
+    const projectURL = `https://tasks.hotosm.org/project/${projectId}` // move base URL to Parameter Store
 
-    const projectURL = `https://tasks.hotosm.org/project/${projectId}`
-
-    const projectStatsBlock = [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `<${projectURL}|*${projectId} - ${projectInfo.name}*>`,
+    const projectStatsBlock = {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `<${projectURL}|*${projectId} - ${projectInfo.name}*>`,
+          },
         },
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `*${status}* - ${projectInfo.shortDescription}`,
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*${status}* - ${projectInfo.shortDescription}`,
+          },
         },
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `:world_map: *Project Area* - ${projectStats['projectArea(in sq.km)']} sq. km.`,
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:world_map: *Project Area* - ${projectArea}} sq. km.`,
+          },
         },
-      },
-      {
-        type: 'divider',
-      },
-      {
-        type: 'section',
-        fields: [
-          {
-            type: 'mrkdwn',
-            text: `:female-construction-worker::male-construction-worker: *Number of Contributors*: ${totalMappers}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:clipboard: *Number of Tasks*: ${totalTasks}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:round_pushpin: *${percentMapped}%* Mapped`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:white_check_mark: *${percentValidated}%* Validated`,
-          },
-        ],
-      },
-    ]
+        {
+          type: 'divider',
+        },
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: `:female-construction-worker::male-construction-worker: *Number of Contributors*: ${totalMappers}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:clipboard: *Number of Tasks*: ${totalTasks}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:round_pushpin: *${percentMapped}%* Mapped`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:white_check_mark: *${percentValidated}%* Validated`,
+            },
+          ],
+        },
+      ],
+    }
 
-    return createSlackResponse(responseURL, projectStatsBlock)
+    await sendToSlack(responseURL, projectStatsBlock)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
 
@@ -229,112 +228,115 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
   try {
     const projectUserStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/queries/${encodeURIComponent(
       userName
-    )}/`
-    const projectURL = `https://tasks.hotosm.org/project/${projectId}`
+    )}/` // move base URL to Parameter Store
+    const projectURL = `https://tasks.hotosm.org/project/${projectId}` // move base URL to Parameter Store
 
-    const projectUserStatsResponse = await fetch(
+    const projectUserStatsRes = await fetch(
       projectUserStatsURL,
       TM_REQUEST_HEADER
     )
-    const projectUserStats = await projectUserStatsResponse.json()
 
-    if (projectUserStats.Error) {
-      return userErrorMessage(responseURL)
+    if (projectUserStatsRes.status != 200) {
+      const { Error } = await projectUserStatsRes.json()
+      const errorMessage = {
+        response_type: 'ephemeral',
+        text:
+          `:x: ${Error}.\n` +
+          'Use the `/tm-stats help` command for help on using this command.',
+      }
+
+      await sendToSlack(responseURL, errorMessage)
+      return
     }
 
     const {
       timeSpentMapping,
       timeSpentValidating,
       totalTimeSpent,
-    } = projectUserStats
+    } = await projectUserStatsRes.json()
 
-    const projectUserStatsBlock = [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `User *${userName}* has spent *${transformSecondsToDHMS(
-            totalTimeSpent
-          )}* contributing to <${projectURL}|project ${projectId}>:`,
+    const projectUserStatsBlock = {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `User *${userName}* has spent *${transformSecondsToDHMS(
+              totalTimeSpent
+            )}* contributing to <${projectURL}|project ${projectId}>:`,
+          },
         },
-      },
-      {
-        type: 'section',
-        fields: [
-          {
-            type: 'mrkdwn',
-            text: `:round_pushpin: ${transformSecondsToDHMS(
-              timeSpentMapping
-            )} mapping`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:white_check_mark: ${transformSecondsToDHMS(
-              timeSpentValidating
-            )} validating`,
-          },
-        ],
-      },
-    ]
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: `:round_pushpin: ${transformSecondsToDHMS(
+                timeSpentMapping
+              )} mapping`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:white_check_mark: ${transformSecondsToDHMS(
+                timeSpentValidating
+              )} validating`,
+            },
+          ],
+        },
+      ],
+    }
 
-    return createSlackResponse(responseURL, projectUserStatsBlock)
+    await sendToSlack(responseURL, projectUserStatsBlock)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
 
 const statsTaskingManager = async (responseURL) => {
   try {
-    const TM_STATS_URL =
-      'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
-
-    const taskingManagerStatsResponse = await fetch(TM_STATS_URL)
+    const taskingManagerStatsRes = await fetch(TM_STATS_URL)
     const {
       mappersOnline,
       tasksMapped,
       totalMappers,
       totalProjects,
-    } = await taskingManagerStatsResponse.json()
+    } = await taskingManagerStatsRes.json()
 
-    const taskingManagerStatsBlock = [
-      {
-        type: 'section',
-        fields: [
-          {
-            type: 'mrkdwn',
-            text: `:female-construction-worker::male-construction-worker: *Number of Mappers Online*: ${mappersOnline}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:round_pushpin: *Number of Mappers*: ${totalMappers}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:teamwork-dreamwork::teamwork-dreamwork: *Number of Tasks Mapped*: ${tasksMapped}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
-          },
-        ],
-      },
-    ]
+    const taskingManagerStatsBlock = {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: `:female-construction-worker::male-construction-worker: *Number of Mappers Online*: ${mappersOnline}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:round_pushpin: *Number of Mappers*: ${totalMappers}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:teamwork-dreamwork::teamwork-dreamwork: *Number of Tasks Mapped*: ${tasksMapped}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+            },
+          ],
+        },
+      ],
+    }
 
-    return createSlackResponse(responseURL, taskingManagerStatsBlock)
+    await sendToSlack(responseURL, taskingManagerStatsBlock)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
 
@@ -344,13 +346,13 @@ const statsUser = async (responseURL, userName) => {
   try {
     const userStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/users/${encodeURIComponent(
       userName
-    )}/statistics/`
+    )}/statistics/` // move base URL to Parameter Store
 
-    const userStatsResponse = await fetch(userStatsURL, TM_REQUEST_HEADER)
-    const userStats = await userStatsResponse.json()
+    const userStatsRes = await fetch(userStatsURL, TM_REQUEST_HEADER)
 
-    if (userStats.Error) {
-      return userErrorMessage(responseURL)
+    if (userStatsRes.status != 200) {
+      await sendToSlack(responseURL, USER_ERROR_BLOCK)
+      return
     }
 
     const {
@@ -363,81 +365,80 @@ const statsUser = async (responseURL, userName) => {
       tasksInvalidated,
       tasksInvalidatedByOthers,
       tasksValidatedByOthers,
-    } = userStats
+    } = await userStatsRes.json()
 
-    const userStatsBlock = [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `:star2: *User ${userName} has mapped ${projectsMapped} project(s)* :star2:`,
+    const userStatsBlock = {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:star2: *User ${userName} has mapped ${projectsMapped} project(s)* :star2:`,
+          },
         },
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `They have spent *${transformSecondsToDHMS(
-            totalTimeSpent
-          )}* in total contributing to the community`,
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `They have spent *${transformSecondsToDHMS(
+              totalTimeSpent
+            )}* in total contributing to the community`,
+          },
         },
-      },
-      {
-        type: 'section',
-        fields: [
-          {
-            type: 'mrkdwn',
-            text: `:mantelpiece_clock: *${transformSecondsToDHMS(
-              timeSpentMapping
-            )}* mapping`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:mantelpiece_clock: *${transformSecondsToDHMS(
-              timeSpentValidating
-            )}* validating`,
-          },
-        ],
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `:round_pushpin: They have mapped *${tasksMapped} tasks* :round_pushpin:`,
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: `:mantelpiece_clock: *${transformSecondsToDHMS(
+                timeSpentMapping
+              )}* mapping`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:mantelpiece_clock: *${transformSecondsToDHMS(
+                timeSpentValidating
+              )}* validating`,
+            },
+          ],
         },
-      },
-      {
-        type: 'section',
-        fields: [
-          {
+        {
+          type: 'section',
+          text: {
             type: 'mrkdwn',
-            text: `:white_check_mark: Validated *${tasksValidated} tasks*`,
+            text: `:round_pushpin: They have mapped *${tasksMapped} tasks* :round_pushpin:`,
           },
-          {
-            type: 'mrkdwn',
-            text: `:negative_squared_cross_mark: Invalidated *${tasksInvalidated} tasks*`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:heavy_check_mark: Had *${tasksValidatedByOthers} tasks* validated by others`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `:heavy_multiplication_x: Had *${tasksInvalidatedByOthers} tasks* invalidated by others`,
-          },
-        ],
-      },
-    ]
+        },
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: `:white_check_mark: Validated *${tasksValidated} tasks*`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:negative_squared_cross_mark: Invalidated *${tasksInvalidated} tasks*`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:heavy_check_mark: Had *${tasksValidatedByOthers} tasks* validated by others`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `:heavy_multiplication_x: Had *${tasksInvalidatedByOthers} tasks* invalidated by others`,
+            },
+          ],
+        },
+      ],
+    }
 
-    return createSlackResponse(responseURL, userStatsBlock)
+    await sendToSlack(responseURL, userStatsBlock)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
 
@@ -448,11 +449,13 @@ exports.handler = async (event) => {
 
   try {
     if (!commandParameters) {
-      return await statsTaskingManager(responseURL)
+      await statsTaskingManager(responseURL)
+      return
     }
 
     if (commandParameters === 'help') {
-      return helpMessage(responseURL)
+      await sendToSlack(responseURL, HELP_BLOCK)
+      return
     }
 
     const parameterHasSpace = !!commandParameters.match(/\+/) // Message payload has '+' in lieu of spaces
@@ -465,7 +468,8 @@ exports.handler = async (event) => {
       const firstParameter = spacedParameters.slice(0, indexFirstSpace)
 
       if (containsNonDigit(firstParameter)) {
-        return await statsUser(responseURL, spacedParameters)
+        await statsUser(responseURL, spacedParameters)
+        return
       }
 
       const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
@@ -476,7 +480,8 @@ exports.handler = async (event) => {
     }
 
     if (containsNonDigit(commandParameters)) {
-      return await statsUser(responseURL, commandParameters)
+      await statsUser(responseURL, commandParameters)
+      return
     }
 
     return (await projectExists(responseURL, commandParameters))
@@ -485,10 +490,6 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: ERROR_MESSAGE,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
