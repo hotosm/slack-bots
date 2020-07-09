@@ -169,16 +169,17 @@ const createSlackResponse = async (responseURL, message) => {
   }
 }
 
-const changesetStats = async (
-  osmChaSuspectURL,
-  osmChaStatsURL,
-  responseURL
-) => {
+const changesetData = async (osmChaSuspectURL, osmChaStatsURL, responseURL) => {
   try {
     const [osmChaSuspectRes, osmChaStatsRes] = await Promise.all([
       fetch(osmChaSuspectURL, OSMCHA_REQUEST_HEADER),
       fetch(osmChaStatsURL, OSMCHA_REQUEST_HEADER),
     ])
+
+    if (osmChaSuspectRes.status != 200 || osmChaStatsRes.status != 200) {
+      console.error('Error in OSMCha API call')
+      return
+    }
 
     const [{ count }, { changesets, reasons }] = await Promise.all([
       osmChaSuspectRes.json(),
@@ -194,20 +195,18 @@ const changesetStats = async (
 }
 
 const commentChangesets = async (responseURL, changesetComment) => {
-  console.log('HASHTAG')
-
   try {
-    const encodedComments = encodeURIComponent(changesetComment)
-    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedComments}`
-    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedComments}`
+    const encodedComment = encodeURIComponent(changesetComment)
+    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedComment}`
+    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedComment}`
 
-    const { count, changesets, reasons } = await changesetStats(
+    const { count, changesets, reasons } = await changesetData(
       osmChaSuspectURL,
       osmChaStatsURL,
       responseURL
     )
 
-    const filterDescriptor = `comments: ${changesetComment}`
+    const filterDescriptor = `comment(s): ${changesetComment}`
     const osmChaURL = createOsmChaUrl({ changesetComment })
 
     const commentBlock = createBlock(
@@ -229,8 +228,6 @@ const commentChangesets = async (responseURL, changesetComment) => {
 }
 
 const projectChangesets = async (responseURL, projectId) => {
-  console.log('PROJECT')
-
   try {
     const taskingManagerURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/?as_file=false&abbreviated=false`
 
@@ -266,7 +263,7 @@ const projectChangesets = async (responseURL, projectId) => {
       changesetComment
     )}&in_bbox=${aoiBBOX}`
 
-    const { count, changesets, reasons } = await changesetStats(
+    const { count, changesets, reasons } = await changesetData(
       osmChaSuspectURL,
       osmChaStatsURL,
       responseURL
@@ -301,7 +298,6 @@ exports.handler = async (event) => {
   const snsMessage = JSON.parse(event.Records[0].Sns.Message)
   const responseURL = decodeURIComponent(snsMessage.response_url)
   const commandParameters = snsMessage.text
-  console.log(`PARAMETERS: ${commandParameters}`)
 
   try {
     if (!commandParameters) {
