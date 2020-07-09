@@ -4,12 +4,12 @@ const TM_REQUEST_HEADER = {
   headers: {
     'Content-Type': 'application/json',
     Authorization:
-      'Token TVRBNE9UUTNNalEuWHdQb2RBLnExRHJmZERPZ2NLSXJ6Vk45bmNxckFuV0xfVQ==', //change this with parameter store value
+      'Token TVRBNE9UUTNNalEuWHdQb2RBLnExRHJmZERPZ2NLSXJ6Vk45bmNxckFuV0xfVQ==', // change this with parameter store value
   },
 }
 
 const ERROR_MESSAGE =
-  'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>'
+  'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>' // move to Parameter Store so it can be used for all generic errors?
 
 const containsNonDigit = (parameter) => {
   return !!parameter.match(/\D/)
@@ -81,7 +81,7 @@ const userErrorMessage = (responseURL) => {
       text: {
         type: 'mrkdwn',
         text:
-          ':x: Please check that the project ID / username is correct.\nUse the `/tm-stats help` command for additional information',
+          ':x: Please check that the project ID / username is correct.\nUse the `/tm-stats help` command for additional information.',
       },
     },
   ]
@@ -144,8 +144,6 @@ const helpMessage = (responseURL) => {
 }
 
 const statsProject = async (responseURL, projectId) => {
-  console.log('STATS PROJECT')
-
   try {
     const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/`
     const projectSummaryResponse = await fetch(projectSummaryURL)
@@ -186,7 +184,7 @@ const statsProject = async (responseURL, projectId) => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*Project Area* - ${projectStats['projectArea(in sq.km)']} sq. km.`,
+          text: `:world_map: *Project Area* - ${projectStats['projectArea(in sq.km)']} sq. km.`,
         },
       },
       {
@@ -197,19 +195,19 @@ const statsProject = async (responseURL, projectId) => {
         fields: [
           {
             type: 'mrkdwn',
-            text: `*Number of Contributors*: ${totalMappers}`,
+            text: `:female-construction-worker::male-construction-worker: *Number of Contributors*: ${totalMappers}`,
           },
           {
             type: 'mrkdwn',
-            text: `*Number of Tasks*: ${totalTasks}`,
+            text: `:clipboard: *Number of Tasks*: ${totalTasks}`,
           },
           {
             type: 'mrkdwn',
-            text: `*${percentMapped}%* Mapped`,
+            text: `:round_pushpin: *${percentMapped}%* Mapped`,
           },
           {
             type: 'mrkdwn',
-            text: `*${percentValidated}%* Validated`,
+            text: `:white_check_mark: *${percentValidated}%* Validated`,
           },
         ],
       },
@@ -228,8 +226,6 @@ const statsProject = async (responseURL, projectId) => {
 }
 
 const statsProjectUser = async (responseURL, projectId, userName) => {
-  console.log('STATS PROJECT USER')
-
   try {
     const projectUserStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/queries/${encodeURIComponent(
       userName
@@ -247,9 +243,9 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
     }
 
     const {
-      timeSpentMapping: secondsSpentMapping,
-      timeSpentValidating: secondsSpentValidating,
-      totalTimeSpent: secondsTotalTimeSpent,
+      timeSpentMapping,
+      timeSpentValidating,
+      totalTimeSpent,
     } = projectUserStats
 
     const projectUserStatsBlock = [
@@ -258,7 +254,7 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
         text: {
           type: 'mrkdwn',
           text: `User *${userName}* has spent *${transformSecondsToDHMS(
-            secondsTotalTimeSpent
+            totalTimeSpent
           )}* contributing to <${projectURL}|project ${projectId}>:`,
         },
       },
@@ -268,13 +264,13 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
           {
             type: 'mrkdwn',
             text: `:round_pushpin: ${transformSecondsToDHMS(
-              secondsSpentMapping
+              timeSpentMapping
             )} mapping`,
           },
           {
             type: 'mrkdwn',
             text: `:white_check_mark: ${transformSecondsToDHMS(
-              secondsSpentValidating
+              timeSpentValidating
             )} validating`,
           },
         ],
@@ -312,7 +308,7 @@ const statsTaskingManager = async (responseURL) => {
         fields: [
           {
             type: 'mrkdwn',
-            text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
+            text: `:female-construction-worker::male-construction-worker: *Number of Mappers Online*: ${mappersOnline}`,
           },
           {
             type: 'mrkdwn',
@@ -358,9 +354,9 @@ const statsUser = async (responseURL, userName) => {
     }
 
     const {
-      totalTimeSpent: secondsTotalTimeSpent,
-      timeSpentMapping: secondsSpentMapping,
-      timeSpentValidating: secondsSpentValidating,
+      totalTimeSpent,
+      timeSpentMapping,
+      timeSpentValidating,
       projectsMapped,
       tasksMapped,
       tasksValidated,
@@ -382,7 +378,7 @@ const statsUser = async (responseURL, userName) => {
         text: {
           type: 'mrkdwn',
           text: `They have spent *${transformSecondsToDHMS(
-            secondsTotalTimeSpent
+            totalTimeSpent
           )}* in total contributing to the community`,
         },
       },
@@ -392,13 +388,13 @@ const statsUser = async (responseURL, userName) => {
           {
             type: 'mrkdwn',
             text: `:mantelpiece_clock: *${transformSecondsToDHMS(
-              secondsSpentMapping
+              timeSpentMapping
             )}* mapping`,
           },
           {
             type: 'mrkdwn',
             text: `:mantelpiece_clock: *${transformSecondsToDHMS(
-              secondsSpentValidating
+              timeSpentValidating
             )}* validating`,
           },
         ],
@@ -450,39 +446,49 @@ exports.handler = async (event) => {
   const responseURL = decodeURIComponent(snsMessage.response_url)
   const commandParameters = snsMessage.text
 
-  if (!commandParameters) {
-    return await statsTaskingManager(responseURL)
-  }
-
-  if (commandParameters === 'help') {
-    return helpMessage(responseURL)
-  }
-
-  const parameterHasSpace = !!commandParameters.match(/\+/)
-
-  if (parameterHasSpace) {
-    const spacedParameters = decodeURIComponent(
-      commandParameters.replace(/\+/g, ' ')
-    )
-    const indexFirstSpace = spacedParameters.indexOf(' ')
-    const firstParameter = spacedParameters.slice(0, indexFirstSpace)
-
-    if (containsNonDigit(firstParameter)) {
-      return await statsUser(responseURL, spacedParameters)
+  try {
+    if (!commandParameters) {
+      return await statsTaskingManager(responseURL)
     }
 
-    const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
+    if (commandParameters === 'help') {
+      return helpMessage(responseURL)
+    }
 
-    return (await projectExists(responseURL, firstParameter))
-      ? await statsProjectUser(responseURL, firstParameter, secondParameter)
-      : await statsUser(responseURL, spacedParameters)
+    const parameterHasSpace = !!commandParameters.match(/\+/) // Message payload has '+' in lieu of spaces
+
+    if (parameterHasSpace) {
+      const spacedParameters = decodeURIComponent(
+        commandParameters.replace(/\+/g, ' ')
+      )
+      const indexFirstSpace = spacedParameters.indexOf(' ')
+      const firstParameter = spacedParameters.slice(0, indexFirstSpace)
+
+      if (containsNonDigit(firstParameter)) {
+        return await statsUser(responseURL, spacedParameters)
+      }
+
+      const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
+
+      return (await projectExists(responseURL, firstParameter))
+        ? await statsProjectUser(responseURL, firstParameter, secondParameter)
+        : await statsUser(responseURL, spacedParameters)
+    }
+
+    if (containsNonDigit(commandParameters)) {
+      return await statsUser(responseURL, commandParameters)
+    }
+
+    return (await projectExists(responseURL, commandParameters))
+      ? await statsProject(responseURL, commandParameters)
+      : await statsUser(responseURL, commandParameters)
+  } catch (error) {
+    console.error(error)
+
+    await fetch(responseURL, {
+      method: 'post',
+      body: ERROR_MESSAGE,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
-
-  if (containsNonDigit(commandParameters)) {
-    return await statsUser(responseURL, commandParameters)
-  }
-
-  return (await projectExists(responseURL, commandParameters))
-    ? await statsProject(responseURL, commandParameters)
-    : await statsUser(responseURL, commandParameters)
 }
