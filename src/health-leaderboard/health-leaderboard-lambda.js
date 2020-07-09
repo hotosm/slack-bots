@@ -1,5 +1,7 @@
 const fetch = require('node-fetch')
 
+const ERROR_MESSAGE =
+  ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>'
 const OSM_EPOCH = 22457216 // Wed, 12 Sep 2012 06:56:00 UTC in minutes
 const OVERPASS_API_URL = 'https://overpass-api.de/api/augmented_diff_status'
 const OSM_STATS_URL = 'http://osm-stats-production-api.azurewebsites.net/status'
@@ -28,11 +30,28 @@ exports.handler = async (event) => {
   const responseURL = decodeURIComponent(snsMessage.response_url)
 
   try {
-    const overpassResult = await fetch(OVERPASS_API_URL)
-    const latestOverpassTime = await overpassResult.json()
+    const [overpassRes, osmStatsRes] = await Promise.all([
+      fetch(OVERPASS_API_URL),
+      fetch(OSM_STATS_URL),
+    ])
 
-    const osmStatsResponse = await fetch(OSM_STATS_URL)
-    const osmStats = await osmStatsResponse.json()
+    if (overpassRes.status != 200 || osmStatsRes.status != 200) {
+      await fetch(responseURL, {
+        method: 'post',
+        body: {
+          response_type: 'ephemeral',
+          text: ERROR_MESSAGE,
+        },
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      return
+    }
+
+    const [latestOverpassTime, osmStats] = await Promise.all([
+      overpassRes.json(),
+      osmStatsRes.json(),
+    ])
 
     const osmAugmentedDiffs = osmStats.find(
       (object) => object.component === 'augmented diffs'
@@ -87,8 +106,7 @@ exports.handler = async (event) => {
       method: 'post',
       body: {
         response_type: 'ephemeral',
-        text:
-          ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+        text: ERROR_MESSAGE,
       },
       headers: { 'Content-Type': 'application/json' },
     })
