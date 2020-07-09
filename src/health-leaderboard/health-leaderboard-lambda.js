@@ -85,8 +85,11 @@ exports.handler = async (event) => {
 
     await fetch(responseURL, {
       method: 'post',
-      body:
-        'Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      body: {
+        response_type: 'ephemeral',
+        text:
+          ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      },
       headers: { 'Content-Type': 'application/json' },
     })
   }
