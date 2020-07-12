@@ -373,6 +373,10 @@ const statsUser = async (responseURL, userName) => {
       tasksValidatedByOthers,
     } = await userStatsRes.json()
 
+    const userTmURL = `https://tasks.hotosm.org/users/${encodeURIComponent(
+      userName
+    )}`
+
     const userStatsBlock = {
       response_type: 'ephemeral',
       blocks: [
@@ -380,7 +384,7 @@ const statsUser = async (responseURL, userName) => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `:star2: *User ${userName} has mapped ${projectsMapped} project(s)* :star2:`,
+            text: `:star2: *User <${userTmURL}|${userName}> has mapped ${projectsMapped} project(s)* :star2:`, // move to Parameter Store
           },
         },
         {
