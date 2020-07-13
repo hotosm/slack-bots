@@ -11,6 +11,10 @@ const TM_REQUEST_HEADER = {
   },
 }
 
+const throwError = (message) => {
+  throw new Error(message)
+}
+
 const ERROR_MESSAGE = {
   response_type: 'ephemeral',
   text:
@@ -112,35 +116,25 @@ const transformSecondsToDHMS = (time) => {
 }
 
 const sendToSlack = async (responseURL, message) => {
-  try {
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify(message),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-  } catch (error) {
-    console.error(error)
-  }
+  await fetch(responseURL, {
+    method: 'post',
+    body: JSON.stringify(message),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
 }
 
 const projectExists = async (responseURL, projectId) => {
   const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/` // move base URL to Parameter Store
   const projectSummaryRes = await fetch(projectSummaryURL)
 
-  try {
-    if (projectSummaryRes.status === 500) {
-      await sendToSlack(responseURL, ERROR_MESSAGE)
-      return
-    }
-
-    return projectSummaryRes.status === 200 ? true : false
-  } catch (error) {
-    console.error(error)
-
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+  if (projectSummaryRes.status >= 500) {
+    throwError('Status 500 when calling Tasking Manager')
+    return
   }
+
+  return projectSummaryRes.status === 200 ? true : false
 }
 
 const statsProject = async (responseURL, projectId) => {
@@ -154,7 +148,7 @@ const statsProject = async (responseURL, projectId) => {
     ])
 
     if (projectSummaryRes.status != 200 || projectStatsRes.status != 200) {
-      await sendToSlack(responseURL, ERROR_MESSAGE)
+      throwError('Cannot get project information from Tasking Manager')
       return
     }
 
@@ -238,14 +232,8 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
 
     if (projectUserStatsRes.status != 200) {
       const { Error } = await projectUserStatsRes.json()
-      const errorMessage = {
-        response_type: 'ephemeral',
-        text:
-          `:x: ${Error}.\n` +
-          'Use the `/tm-stats help` command for help on using this command.',
-      }
 
-      await sendToSlack(responseURL, errorMessage)
+      throwError(Error)
       return
     }
 
@@ -291,6 +279,11 @@ const statsProjectUser = async (responseURL, projectId, userName) => {
   } catch (error) {
     console.error(error)
 
+    if (error.message === 'User not found') {
+      await sendToSlack(responseURL, USER_ERROR_BLOCK)
+      return
+    }
+
     await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
@@ -300,7 +293,7 @@ const statsTaskingManager = async (responseURL) => {
     const taskingManagerStatsRes = await fetch(TM_STATS_URL)
 
     if (taskingManagerStatsRes.status != 200) {
-      await sendToSlack(responseURL, ERROR_MESSAGE)
+      throwError('Cannot get Tasking Manager home page stats')
       return
     }
 
@@ -347,8 +340,6 @@ const statsTaskingManager = async (responseURL) => {
 }
 
 const statsUser = async (responseURL, userName) => {
-  console.log('STATS USER')
-
   try {
     const userStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/users/${encodeURIComponent(
       userName
@@ -357,7 +348,12 @@ const statsUser = async (responseURL, userName) => {
     const userStatsRes = await fetch(userStatsURL, TM_REQUEST_HEADER)
 
     if (userStatsRes.status != 200) {
-      await sendToSlack(responseURL, USER_ERROR_BLOCK)
+      if (userStatsRes.status >= 400 && userStatsRes.status < 500) {
+        throwError('User cannot be found or accessed')
+        return
+      }
+
+      throwError('Cannot get user stats from Tasking Manager')
       return
     }
 
@@ -447,6 +443,11 @@ const statsUser = async (responseURL, userName) => {
     await sendToSlack(responseURL, userStatsBlock)
   } catch (error) {
     console.error(error)
+
+    if (error.message === 'User cannot be found or accessed') {
+      await sendToSlack(responseURL, USER_ERROR_BLOCK)
+      return
+    }
 
     await sendToSlack(responseURL, ERROR_MESSAGE)
   }
