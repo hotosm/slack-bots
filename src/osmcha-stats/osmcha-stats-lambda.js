@@ -9,6 +9,10 @@ const OSMCHA_REQUEST_HEADER = {
   },
 }
 
+const throwError = (message) => {
+  throw new Error(message)
+}
+
 const ERROR_MESSAGE = {
   response_type: 'ephemeral',
   text:
@@ -139,10 +143,6 @@ const createBlock = (
   return messageBlock
 }
 
-const throwError = (message) => {
-  throw new Error(message)
-}
-
 const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
   const BASE_URL = 'https://osmcha.org/' // move to Parameter Store
   const AREA_LT_VALUE = 2
@@ -169,17 +169,13 @@ const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
 }
 
 const sendToSlack = async (responseURL, message) => {
-  try {
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify(message),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-  } catch (error) {
-    console.error(error)
-  }
+  await fetch(responseURL, {
+    method: 'post',
+    body: JSON.stringify(message),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
 }
 
 const changesetData = async (osmChaSuspectURL, osmChaStatsURL) => {
@@ -242,7 +238,7 @@ const commentChangesets = async (responseURL, changesetComment) => {
 
     const filterDescriptor = complete
       ? `<${osmChaURL}|comment(s): ${changesetComment}>`
-      : `<${osmChaURL}|comment(s): ${changesetComment}>.\nDue to the large dataset, we are only showing the data from last month.\nAdd more hashtags to filter changesets more or click on the hyperlink to see all changesets in OSMCha.`
+      : `<${osmChaURL}|comment(s): ${changesetComment}>.\nDue to the large dataset, we are only showing the data from last month.\nAdd more hashtags to filter the results further or click on the hyperlink to see all changesets in OSMCha.`
 
     const commentBlock = createBlock(
       filterDescriptor,
@@ -252,8 +248,6 @@ const commentChangesets = async (responseURL, changesetComment) => {
     )
 
     await sendToSlack(responseURL, commentBlock)
-
-    return
   } catch (error) {
     console.error(error)
 
@@ -261,10 +255,9 @@ const commentChangesets = async (responseURL, changesetComment) => {
       const timeOutError = {
         response_type: 'ephemeral',
         text:
-          ':x: The dataset is too big to show. Please put in additional hashtags to filter the changesets more. Use the `/osmcha-stats help` command for help on using this command.\n' +
-          `<${osmChaURL}|You can see the changesets for ${changesetComment} at OSMCha by clicking HERE.>`,
+          ':x: The dataset is too big to show. Please put in additional hashtags to filter the results further. Use the `/osmcha-stats help` command for help on using this command.\n' +
+          `<${osmChaURL}|You can see the changesets for ${changesetComment} at OSMCha by clicking here.>`,
       }
-
       await sendToSlack(responseURL, timeOutError)
       return
     }
@@ -280,16 +273,7 @@ const projectChangesets = async (responseURL, projectId) => {
     const tmProjectRes = await fetch(taskingManagerURL)
 
     if (tmProjectRes.status != 200) {
-      const { Error } = await tmProjectRes.json()
-      const errorMessage = {
-        response_type: 'ephemeral',
-        text:
-          `:x: ${Error}.\n` +
-          'Use the `/osmcha-stats help` command for help on using this command.',
-      }
-
-      await sendToSlack(responseURL, errorMessage)
-      return
+      throwError('Project cannot be found or accessed')
     }
 
     let {
@@ -334,6 +318,17 @@ const projectChangesets = async (responseURL, projectId) => {
     return
   } catch (error) {
     console.error(error)
+
+    if (error.message === 'Project cannot be found or accessed') {
+      const projectUnavailable = {
+        response_type: 'ephemeral',
+        text:
+          `:x: ${error.message}` +
+          '\nUse the `/osmcha-stats help` command for help on using this command.',
+      }
+      await sendToSlack(responseURL, projectUnavailable)
+      return
+    }
 
     await sendToSlack(responseURL, ERROR_MESSAGE)
   }
