@@ -6,29 +6,54 @@ const TM_STATUS_URL =
 const TM_STATISTICS_URL =
   'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
 
-const createBlock = (status, mappersOnline, totalProjects) => {
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: ':white_check_mark: *The Tasking Manager is operational*',
+const successBlock = (mappersOnline, totalProjects) => {
+  return {
+    response_type: 'ephemeral',
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: ':white_check_mark: *The Tasking Manager is operational*',
+        },
       },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+          },
+        ],
+      },
+    ],
+  }
+}
+
+const serverErrorBlock = {
+  response_type: 'ephemeral',
+  text:
+    ':heavy_exclamation_mark: The Tasking Manager cannot be reached right now. Please try again and if the error persists, post a message at <#C319P09PB>',
+}
+
+const errorBlock = {
+  response_type: 'ephemeral',
+  text:
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+}
+
+const sendToSlack = async (responseURL, message) => {
+  await fetch(responseURL, {
+    method: 'post',
+    body: JSON.stringify(message),
+    headers: {
+      'Content-Type': 'application/json',
     },
-    {
-      type: 'section',
-      fields: [
-        {
-          type: 'mrkdwn',
-          text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
-        },
-        {
-          type: 'mrkdwn',
-          text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
-        },
-      ],
-    },
-  ]
+  })
 }
 
 exports.handler = async (event) => {
@@ -42,44 +67,18 @@ exports.handler = async (event) => {
     ])
 
     if (tmStatusRes.status != 200 || tmStatisticsRes.status != 200) {
-      await fetch(responseURL, {
-        method: 'post',
-        body: {
-          response_type: 'ephemeral',
-          text:
-            ':heavy_exclamation_mark: The Tasking Manager cannot be reached right now. Please try again and if the error persists, post a message at <#C319P09PB>',
-        },
-        headers: { 'Content-Type': 'application/json' },
-      })
+      await sendToSlack(responseURL, serverErrorBlock)
       return
     }
 
-    const [{ status }, { mappersOnline, totalProjects }] = await Promise.all([
-      tmStatusRes.json(),
-      tmStatisticsRes.json(),
-    ])
+    const { mappersOnline, totalProjects } = await tmStatisticsRes.json()
 
-    const slackMessage = {
-      response_type: 'ephemeral',
-      blocks: createBlock(status, mappersOnline, totalProjects),
-    }
+    const slackMessage = successBlock(mappersOnline, totalProjects)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify(slackMessage),
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, slackMessage)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: {
-        response_type: 'ephemeral',
-        text:
-          ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
-      },
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, errorBlock)
   }
 }
