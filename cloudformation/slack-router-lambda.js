@@ -1,5 +1,8 @@
 const AWS = require('aws-sdk')
 
+const region = process.env.AWS_REGION
+const accountId = process.env.AWS_ACCOUNT_ID
+
 function parseBody(event) {
   const eventJSON = JSON.stringify(event.body, null, 2)
   const eventBody = Buffer.from(eventJSON, 'base64').toString('ascii')
@@ -23,7 +26,7 @@ exports.handler = async (event) => {
   const params = {
     Message: JSON.stringify(eventBody),
     Subject: 'SNS from Slack Slash Command',
-    TopicArn: `arn:aws:sns:us-east-1:670261699094:${command}`,
+    TopicArn: `arn:aws:sns:${region}:${accountId}:${command}`,
   }
 
   try {

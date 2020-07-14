@@ -66,6 +66,11 @@ const Resources = {
         S3Bucket: 'lambda-andria',
         S3Key: 'slack-router-lambda.zip',
       },
+      Environment: {
+        Variables: {
+          AWS_ACCOUNT_ID: cf.accountId,
+        },
+      },
       Runtime: 'nodejs12.x',
       Timeout: '30',
     },
