@@ -20,16 +20,16 @@ function parseBody(event) {
 }
 
 exports.handler = async (event) => {
-  const eventBody = parseBody(event)
-  const command = decodeURIComponent(eventBody.command).substring(1)
-
-  const params = {
-    Message: JSON.stringify(eventBody),
-    Subject: 'SNS from Slack Slash Command',
-    TopicArn: `arn:aws:sns:${region}:${accountId}:${command}`,
-  }
-
   try {
+    const eventBody = parseBody(event)
+    const command = decodeURIComponent(eventBody.command).substring(1)
+
+    const params = {
+      Message: JSON.stringify(eventBody),
+      Subject: 'SNS from Slack Slash Command',
+      TopicArn: `arn:aws:sns:${region}:${accountId}:${command}`,
+    }
+
     await new AWS.SNS().publish(params).promise()
 
     return {
@@ -38,9 +38,12 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json' },
     }
   } catch (error) {
+    console.error(error)
+
     return {
       statusCode: 200,
-      body: 'Something went wrong with your request.',
+      body:
+        ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
       headers: { 'Content-Type': 'application/json' },
     }
   }
