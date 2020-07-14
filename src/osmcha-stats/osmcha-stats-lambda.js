@@ -16,7 +16,7 @@ const throwError = (message) => {
 const ERROR_MESSAGE = {
   response_type: 'ephemeral',
   text:
-    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>.', // move to Parameter Store so it can be used for all generic errors?
 }
 
 const HELP_BLOCK = {
@@ -43,7 +43,7 @@ const HELP_BLOCK = {
       text: {
         type: 'mrkdwn',
         text:
-          ':small_blue_diamond: `/osmcha-stats [hashtags]` for stats on changesets with specific hashtags. Separate multiple hashtags with a space. (e.g. `/osmcha-stats #covid19 #hotosm-project-8272`)',
+          ':small_blue_diamond: `/osmcha-stats [hashtags]` for stats on changesets with specific hashtags. Separate multiple hashtags with a space (e.g. `/osmcha-stats #hotosm-project-8386 #HOTPH`)',
       },
     },
     {
@@ -51,7 +51,15 @@ const HELP_BLOCK = {
       text: {
         type: 'mrkdwn',
         text:
-          ':small_red_triangle: For best results, input in as many hashtags as you can to filter the changesets more precisely. If the changeset data is too big, we would not be able to present them here.',
+          ':small_red_triangle: Note that when filtering using hashtags, the hashtags must be in the same order as listed in the changesets.',
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text:
+          ':small_red_triangle: For best results, input as many hashtags as you can to filter the changesets more precisely. If the changeset data is too big, we would not be able to present them here.',
       },
     },
     {
@@ -95,7 +103,7 @@ const createBlock = (
     const noChangesetBlock = {
       response_type: 'ephemeral',
       text:
-        `:x: There are *${changesetCount} changesets* under ${filterDescriptor}\n` +
+        `:x: There are *${changesetCount} changesets* under ${filterDescriptor}.\n` +
         'Use the `/osmcha-stats help` command for help on using this command.',
     }
     return noChangesetBlock
@@ -126,7 +134,7 @@ const createBlock = (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `:page_with_curl: There are *${changesetCount} changesets* under ${filterDescriptor}`,
+          text: `:page_with_curl: There are *${changesetCount} changesets* under ${filterDescriptor}.`,
         },
       },
       {
@@ -238,7 +246,7 @@ const commentChangesets = async (responseURL, changesetComment) => {
 
     const filterDescriptor = complete
       ? `<${osmChaURL}|comment(s): ${changesetComment}>`
-      : `<${osmChaURL}|comment(s): ${changesetComment}>.\nDue to the large dataset, we are only showing the data from last month.\nAdd more hashtags to filter the results further or click on the hyperlink to see all changesets in OSMCha.`
+      : `<${osmChaURL}|comment(s): ${changesetComment}>\nDue to the large dataset, we are only showing the data from last month.\nAdd more hashtags to filter the results further or click on the hyperlink to see all changesets in OSMCha.`
 
     const commentBlock = createBlock(
       filterDescriptor,
@@ -256,7 +264,7 @@ const commentChangesets = async (responseURL, changesetComment) => {
         response_type: 'ephemeral',
         text:
           ':x: The dataset is too big to show. Please put in additional hashtags to filter the results further. Use the `/osmcha-stats help` command for help on using this command.\n' +
-          `<${osmChaURL}|You can see the changesets for ${changesetComment} at OSMCha by clicking here.>`,
+          `<${osmChaURL}|You can see the changesets for ${changesetComment} at OSMCha by clicking here>.`,
       }
       await sendToSlack(responseURL, timeOutError)
       return
