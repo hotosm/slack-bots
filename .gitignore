@@ -60,9 +60,5 @@ typings/
 # next.js build output
 .next
 
-# formatting config
-*.prettierrc*
-*.eslintrc.yml*
-
 # Mac Config file
 *.DS_Store*
