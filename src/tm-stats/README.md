@@ -1,10 +1,10 @@
 # /tm-stats Slack slash command
-Checks the status of the Tasking Manager and return its current status plus other pertinent information such as number of mappers currently online and total number of projects hosted in Tasking Manager
+Returns information on the Tasking Manager, projects, or users depending on parameters used.
 
 ## How to use
 Write `/tm-stats [parameters]` in the message field of any Slack channel or direct message. The result will be showed only to the user who called the command.
 
-The command will return different information depending on which parameters you use:
+You can input no parameters, projects ID, username, and project ID and username together as parameters:
 
 * `/tm-stats` to gets stats on the Tasking Manager home page
 
@@ -36,16 +36,21 @@ This command calls the Tasking Manager API:
 
 ## Expected results
 `/tm-stats`:
+
 ![tm-stats](https://user-images.githubusercontent.com/54427598/87522743-15da0000-c6da-11ea-8fe8-0c25891af02a.png)
 
 `/tm-stats [projectID]`:
+
 ![tm-stats-project](https://user-images.githubusercontent.com/54427598/87519968-6fd8c680-c6d6-11ea-9040-8dff25378523.png)
 
 `/tm-stats [username]`:
+
 ![tm-stats-user](https://user-images.githubusercontent.com/54427598/87519964-6f403000-c6d6-11ea-8b5f-d2158b89fbf8.png)
 
 `/tm-stats [projectID username]`
+
 ![tm-stats-project-user](https://user-images.githubusercontent.com/54427598/87519967-6f403000-c6d6-11ea-85ce-f4e2137ca1bc.png)
 
 `tm-stats help`:
+
 ![tm-stats-help](https://user-images.githubusercontent.com/54427598/87519958-6e0f0300-c6d6-11ea-98b6-071eff23eaea.png)

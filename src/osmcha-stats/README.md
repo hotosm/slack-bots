@@ -30,12 +30,15 @@ This command calls the Tasking Manager API and the OSMCha API:
 
 ## Expected results
 `/osmcha-stats [projectID]`:
+
 ![osmcha-stats-project](https://user-images.githubusercontent.com/54427598/87515724-5cc2f800-c6d0-11ea-9c7b-0fe29049838b.png)
 
 `/osmcha-stats [hashtags]`:
+
 ![osmcha-stats-hashtag](https://user-images.githubusercontent.com/54427598/87515714-59c80780-c6d0-11ea-8f90-1eb43db4bbd1.png)
 
 `/osmcha-stats help`:
+
 ![osmcha-stats-help](https://user-images.githubusercontent.com/54427598/87516556-b5df5b80-c6d1-11ea-97d9-879f5675625a.png)
 
 
