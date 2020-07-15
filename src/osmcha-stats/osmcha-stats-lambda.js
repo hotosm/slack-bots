@@ -109,7 +109,7 @@ const createBlock = (
     return noChangesetBlock
   }
 
-  const ARRAY_COUNT = 10
+  const ARRAY_COUNT = 4
 
   const suspectChangesetPercentage = Math.round(
     (suspectChangesetCount / changesetCount) * 100
