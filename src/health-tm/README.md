@@ -8,11 +8,11 @@ Write `/health-tm` in the message field of any Slack channel or direct message. 
 ## Dependencies
 This command calls the Tasking Manager API:
 
-[API Reference](https://tasks.hotosm.org/api-docs)
+[Tasking Manager API Reference](https://tasks.hotosm.org/api-docs)
 
-`/api/v2/system/heartbeat/` - returns status 200 if TM is healthy
+`/system/heartbeat/` - returns status 200 if TM is healthy
 
-`/api/v2/system/statistics/` - returns HomePage Stats
+`/system/statistics/` - returns HomePage Stats
 
 
 ## Expected result

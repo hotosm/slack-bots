@@ -10,7 +10,7 @@ This command calls the Overpass API and the OSM Stats API:
 
 [Overpass API Reference](https://www.overpass-api.de/)
 
-`/api/augmented_diff_status/` - returns the latest available augmented diff
+`/augmented_diff_status/` - returns the latest available augmented diff
 
 [OSM Stats API Reference](https://github.com/AmericanRedCross/osm-stats/blob/master/documentation/API.md)
 
