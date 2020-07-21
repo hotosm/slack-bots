@@ -32,7 +32,7 @@ const Resources = {
         ':apigateway:',
         cf.region,
         ':lambda:path/2015-03-31/functions/',
-        cf.arn('SlackRouterLambda'),
+        cf.getAtt('SlackRouterLambda', 'Arn'),
         '/invocations',
       ]),
       PayloadFormatVersion: '2.0',
@@ -66,25 +66,6 @@ const Resources = {
       StageName: 'prod',
     },
   },
-  SlackRouterLambda: {
-    Type: 'AWS::Lambda::Function',
-    Properties: {
-      FunctionName: 'slack-router-lambda',
-      Handler: 'cloudformation/slack-router-lambda.handler',
-      Role: cf.arn('SlackRouterLambdaRole'),
-      Code: {
-        S3Bucket: cf.ref('BucketName'),
-        S3Key: cf.join('', ['bundles/slack-bots/', cf.ref('GitSha'), '.zip']),
-      },
-      Environment: {
-        Variables: {
-          AWS_ACCOUNT_ID: cf.accountId,
-        },
-      },
-      Runtime: 'nodejs12.x',
-      Timeout: '30',
-    },
-  },
   SlackRouterPermission: {
     Type: 'AWS::Lambda::Permission',
     Properties: {
@@ -99,18 +80,22 @@ const Resources = {
   },
 }
 
-const role = new cf.shortcuts.Role({
-  LogicalName: 'SlackRouterLambdaRole',
-  AssumeRolePrincipals: [{ Service: 'lambda.amazonaws.com' }],
-  Statement: [
-    {
-      Effect: 'Allow',
-      Action: [
-        'logs:CreateLogGroup',
-        'logs:CreateLogStream',
-        'logs:CreatePutLogEvents',
-      ],
+const lambda = new cf.shortcuts.Lambda({
+  LogicalName: 'SlackRouterLambda',
+  FunctionName: cf.join('-', [cf.stackName, 'slack-lambda-router']),
+  Handler: 'cloudformation/slack-router-lambda.handler',
+  Code: {
+    S3Bucket: cf.ref('BucketName'),
+    S3Key: cf.join('', ['bundles/slack-bots/', cf.ref('GitSha'), '.zip']),
+  },
+  Environment: {
+    Variables: {
+      AWS_ACCOUNT_ID: cf.accountId,
     },
+  },
+  Runtime: 'nodejs12.x',
+  Timeout: '60',
+  Statement: [
     {
       Effect: 'Allow',
       Action: 'ssm:GetParameter',
@@ -119,6 +104,17 @@ const role = new cf.shortcuts.Role({
       ),
     },
   ],
+  Tags: [
+    {
+      project: 'slackbot',
+      permissions: cf.join('-', ['slackbot', cf.stackName, 'GetParameter']),
+      trigger: cf.join('-', [
+        'slackbot',
+        cf.stackName,
+        cf.ref('SlackRouterApi'),
+      ]),
+    },
+  ],
 })
 
-module.exports = cf.merge(Parameters, Resources, role)
+module.exports = cf.merge({ Parameters, Resources }, lambda)
