@@ -1,5 +1,17 @@
 const cf = require('@mapbox/cloudfriend')
 
+const Parameters = {
+  BucketName: {
+    Type: 'String',
+    Description: 'Name of S3 bucket where Lambda code is saved',
+    Default: 'stork-us-east-1',
+  },
+  GitSha: {
+    Type: 'String',
+    Description: 'Git SHA of latest commit for Lambda function',
+  },
+}
+
 const Resources = {
   SlackRouterApi: {
     Type: 'AWS::ApiGatewayV2::Api',
@@ -20,7 +32,7 @@ const Resources = {
         ':apigateway:',
         cf.region,
         ':lambda:path/2015-03-31/functions/',
-        cf.getAtt('SlackRouterLambda', 'Arn'),
+        cf.arn('SlackRouterLambda'),
         '/invocations',
       ]),
       PayloadFormatVersion: '2.0',
@@ -58,13 +70,11 @@ const Resources = {
     Type: 'AWS::Lambda::Function',
     Properties: {
       FunctionName: 'slack-router-lambda',
-      Handler: 'slack-router-lambda.handler',
-      Role: cf.sub(
-        'arn:aws:iam::${AWS::AccountId}:role/service-role/test-api-lambda-sns-role-6ndj69lt'
-      ),
+      Handler: 'cloudformation/slack-router-lambda.handler',
+      Role: cf.arn('SlackRouterLambdaRole'),
       Code: {
-        S3Bucket: 'lambda-andria',
-        S3Key: 'slack-router-lambda.zip',
+        S3Bucket: cf.ref('BucketName'),
+        S3Key: cf.join('', ['bundles/slack-bots/', cf.ref('GitSha'), '.zip']),
       },
       Environment: {
         Variables: {
@@ -96,4 +106,26 @@ const Resources = {
   },
 }
 
-module.exports = { Resources }
+const role = new cf.shortcuts.Role({
+  LogicalName: 'SlackRouterLambdaRole',
+  AssumeRolePrincipals: [{ Service: 'lambda.amazonaws.com' }],
+  Statement: [
+    {
+      Effect: 'Allow',
+      Action: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:CreatePutLogEvents',
+      ],
+    },
+    {
+      Effect: 'Allow',
+      Action: 'ssm:GetParameter',
+      Resource: cf.sub(
+        'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/slack-router-signing-secret'
+      ),
+    },
+  ],
+})
+
+module.exports = cf.merge(Parameters, Resources, role)
