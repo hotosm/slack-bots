@@ -59,14 +59,18 @@ async function verifyRequest(req) {
   hmac.update(`${version}:${timestamp}:${body}`)
 
   // Check if request signature matches expected value
-  return crypto.timingSafeEqual(hmac.digest('hex'), hash)
+  return crypto.timingSafeEqual(
+    Buffer.from(hmac.digest('hex')),
+    Buffer.from(hash)
+  )
 }
 
 exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
 
   try {
-    if (!verifyRequest(event)) {
+    const isValidRequest = await verifyRequest()
+    if (!isValidRequest) {
       throw new Error('Request verification failed')
     }
 
