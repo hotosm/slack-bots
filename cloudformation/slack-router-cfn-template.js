@@ -82,7 +82,6 @@ const Resources = {
 
 const lambda = new cf.shortcuts.Lambda({
   LogicalName: 'SlackRouterLambda',
-  FunctionName: cf.join('-', [cf.stackName, 'slack-lambda-router']),
   Handler: 'cloudformation/slack-router-lambda.handler',
   Code: {
     S3Bucket: cf.ref('BucketName'),
