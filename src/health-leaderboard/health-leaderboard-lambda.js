@@ -1,62 +1,72 @@
 const fetch = require('node-fetch')
 
-const OVERPASS_API_URL = 'https://overpass-api.de/api/augmented_diff_status'
-const OSM_STATS_URL = 'http://osm-stats-production-api.azurewebsites.net/status'
+const ERROR_MESSAGE = {
+  response_type: 'ephemeral',
+  text:
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
+}
 
-const calculateTimestampDifference = (
-  overpassTimestamp,
-  leaderboardTimestamp
-) => {
-  const OSM_EPOCH = 22457216 // Wed, 12 Sep 2012 06:56:00 UTC in minutes
+const OSM_EPOCH = 22457216 // Wed, 12 Sep 2012 06:56:00 UTC in minutes
+const OVERPASS_API_URL = 'https://overpass-api.de/api/augmented_diff_status' // move to Parameter Store
+const OSM_STATS_URL = 'http://osm-stats-production-api.azurewebsites.net/status' // move to Parameter Store
+const DAY_IN_MINUTES = 60 * 24
 
-  const overpassEpochTime = (overpassTimestamp + OSM_EPOCH) * 60000
-  const overpassDate = new Date(overpassEpochTime)
+function getDateFromOsmTimestamp(osmTimestamp) {
+  return new Date((osmTimestamp + OSM_EPOCH) * 60000)
+}
 
-  const leaderboardEpochTime = (leaderboardTimestamp + OSM_EPOCH) * 60000
-  const leaderboardDate = new Date(leaderboardEpochTime)
+const getLeaderboardStatus = (overpassTime, leaderboardTime) => {
+  const difference = overpassTime - leaderboardTime
 
-  let daysDifference =
-    (overpassEpochTime - leaderboardEpochTime) / (1000 * 60 * 60 * 24)
-
-  const DIFF_THRESHOLD = 0.0208333 // 30 minutes
-
-  if (daysDifference <= DIFF_THRESHOLD) {
-    daysDifference = 'up-to-date'
-  } else if (daysDifference > DIFF_THRESHOLD && daysDifference < 1) {
-    daysDifference = 'less than 1 day behind'
-  } else {
-    daysDifference = `${Math.floor(daysDifference)} day(s) behind`
+  if (difference <= 30) {
+    return 'up-to-date'
   }
 
-  return {
-    overpassDate: overpassDate,
-    leaderboardDate: leaderboardDate,
-    daysDifference: daysDifference,
+  if (difference < DAY_IN_MINUTES) {
+    return 'less than 1 day behind'
   }
+
+  return `${Math.trunc(difference / DAY_IN_MINUTES)} day(s) behind`
+}
+
+const sendToSlack = async (responseURL, message) => {
+  await fetch(responseURL, {
+    method: 'post',
+    body: JSON.stringify(message),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
 }
 
 exports.handler = async (event) => {
-  // TODO: try changing message to object in sender, then remove parse and access response_url directly
   const snsMessage = JSON.parse(event.Records[0].Sns.Message)
   const responseURL = decodeURIComponent(snsMessage.response_url)
 
   try {
-    const overpassFetchResponse = await fetch(OVERPASS_API_URL)
-    const overpassTimestamp = await overpassFetchResponse.json()
+    const [overpassRes, osmStatsRes] = await Promise.all([
+      fetch(OVERPASS_API_URL),
+      fetch(OSM_STATS_URL),
+    ])
 
-    const osmFetchResponse = await fetch(OSM_STATS_URL)
-    const osmStatsArray = await osmFetchResponse.json()
+    if (overpassRes.status != 200 || osmStatsRes.status != 200) {
+      throw new Error('Overpass or OSM Stats API call failed')
+    }
 
-    const osmAugmentedDiffs = osmStatsArray.find(
+    const [latestOverpassTime, osmStats] = await Promise.all([
+      overpassRes.json(),
+      osmStatsRes.json(),
+    ])
+
+    const osmAugmentedDiffs = osmStats.find(
       (object) => object.component === 'augmented diffs'
     )
-    const leaderboardTimestamp = osmAugmentedDiffs.id
+    const latestLeaderboardTime = osmAugmentedDiffs.id
 
-    const {
-      overpassDate,
-      leaderboardDate,
-      daysDifference,
-    } = calculateTimestampDifference(overpassTimestamp, leaderboardTimestamp)
+    const leaderboardStatus = getLeaderboardStatus(
+      latestOverpassTime,
+      latestLeaderboardTime
+    )
 
     const slackMessage = {
       response_type: 'ephemeral',
@@ -65,28 +75,34 @@ exports.handler = async (event) => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `:calendar: Missing Maps Leaderboard data is _${daysDifference}_.\nFeature count and user stats were last updated on *${leaderboardDate}*.\nChangeset and Edit count is from *${overpassDate}*.`,
+            text: `:calendar: Missing Maps Leaderboard data is _${leaderboardStatus}_.`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:small_orange_diamond: Feature count and user stats were last updated on *${getDateFromOsmTimestamp(
+              latestLeaderboardTime
+            )}*`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:small_orange_diamond: Changeset and edit count is from *${getDateFromOsmTimestamp(
+              latestOverpassTime
+            )}*.`,
           },
         },
       ],
     }
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify(slackMessage),
-      headers: { 'Content-Type': 'application/json' },
-    })
-
-    return {
-      statusCode: 200,
-    }
+    await sendToSlack(responseURL, slackMessage)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: 'Something went wrong with your request',
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }

@@ -6,76 +6,79 @@ const TM_STATUS_URL =
 const TM_STATISTICS_URL =
   'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
 
-const parseEvent = (event) => {
-  const snsJSON = JSON.stringify(event.Records[0].Sns)
-  const snsObject = JSON.parse(snsJSON)
-  const decodedSns = JSON.parse(decodeURIComponent(snsObject.Message))
-
-  return decodedSns
+const successBlock = (mappersOnline, totalProjects) => {
+  return {
+    response_type: 'ephemeral',
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: ':white_check_mark: *The Tasking Manager is operational*',
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+          },
+        ],
+      },
+    ],
+  }
 }
 
-const createBlock = (status, mappersOnline, totalProjects) => {
-  return [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text:
-          status === 'healthy'
-            ? ':white_check_mark: *The Tasking Manager is operational*'
-            : ':heavy_exclamation_mark: *The Tasking Manager cannot be reached*',
-      },
+const serverErrorBlock = {
+  response_type: 'ephemeral',
+  text:
+    ':heavy_exclamation_mark: The Tasking Manager cannot be reached right now. Please try again and if the error persists, post a message at <#C319P09PB>',
+}
+
+const errorBlock = {
+  response_type: 'ephemeral',
+  text:
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+}
+
+const sendToSlack = async (responseURL, message) => {
+  await fetch(responseURL, {
+    method: 'post',
+    body: JSON.stringify(message),
+    headers: {
+      'Content-Type': 'application/json',
     },
-    {
-      type: 'section',
-      fields: [
-        {
-          type: 'mrkdwn',
-          text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
-        },
-        {
-          type: 'mrkdwn',
-          text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
-        },
-      ],
-    },
-  ]
+  })
 }
 
 exports.handler = async (event) => {
-  const body = parseEvent(event)
-  const responseURL = body.response_url
+  const snsMessage = JSON.parse(event.Records[0].Sns.Message)
+  const responseURL = decodeURIComponent(snsMessage.response_url)
 
   try {
-    const taskingManagerStatusJSON = await fetch(TM_STATUS_URL)
-    const taskingManagerObj = await taskingManagerStatusJSON.json()
-    const status = taskingManagerObj.status
+    const [tmStatusRes, tmStatisticsRes] = await Promise.all([
+      fetch(TM_STATUS_URL),
+      fetch(TM_STATISTICS_URL),
+    ])
 
-    const taskingManagerStatisticsJSON = await fetch(TM_STATISTICS_URL)
-    const taskingManagerStatisticsObj = await taskingManagerStatisticsJSON.json()
-    const { mappersOnline, totalProjects } = taskingManagerStatisticsObj
-
-    const slackMessage = {
-      response_type: 'ephemeral',
-      blocks: createBlock(status, mappersOnline, totalProjects),
+    if (tmStatusRes.status != 200 || tmStatisticsRes.status != 200) {
+      await sendToSlack(responseURL, serverErrorBlock)
+      return
     }
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify(slackMessage),
-      headers: { 'Content-Type': 'application/json' },
-    })
+    const { mappersOnline, totalProjects } = await tmStatisticsRes.json()
 
-    return {
-      statusCode: 200,
-    }
+    const slackMessage = successBlock(mappersOnline, totalProjects)
+
+    await sendToSlack(responseURL, slackMessage)
   } catch (error) {
     console.error(error)
 
-    await fetch(responseURL, {
-      method: 'post',
-      body: JSON.stringify('Something went wrong with your request'),
-      headers: { 'Content-Type': 'application/json' },
-    })
+    await sendToSlack(responseURL, errorBlock)
   }
 }

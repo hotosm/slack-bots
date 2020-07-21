@@ -1,5 +1,17 @@
 const cf = require('@mapbox/cloudfriend')
 
+const Parameters = {
+  BucketName: {
+    Type: 'String',
+    Description: 'Name of S3 bucket where Lambda code is saved',
+    Default: 'stork-us-east-1',
+  },
+  GitSha: {
+    Type: 'String',
+    Description: 'Git SHA of latest commit for Lambda function',
+  },
+}
+
 const Resources = {
   SlackRouterApi: {
     Type: 'AWS::ApiGatewayV2::Api',
@@ -54,41 +66,55 @@ const Resources = {
       StageName: 'prod',
     },
   },
-  SlackRouterLambda: {
-    Type: 'AWS::Lambda::Function',
-    Properties: {
-      FunctionName: 'slack-router-lambda',
-      Handler: 'slack-router-lambda.handler',
-      Role: cf.sub(
-        'arn:aws:iam::${AWS::AccountId}:role/service-role/test-api-lambda-sns-role-6ndj69lt'
-      ),
-      Code: {
-        S3Bucket: 'lambda-andria',
-        S3Key: 'slack-router-lambda.zip',
-      },
-      Runtime: 'nodejs12.x',
-      Timeout: '30',
-    },
-  },
   SlackRouterPermission: {
     Type: 'AWS::Lambda::Permission',
     Properties: {
       Action: 'lambda:InvokeFunction',
       FunctionName: cf.ref('SlackRouterLambda'),
       Principal: 'apigateway.amazonaws.com',
-      SourceArn: cf.join('', [
-        'arn:',
-        cf.partition,
-        ':execute-api:',
-        cf.region,
-        ':',
-        cf.accountId,
-        ':',
-        cf.ref('SlackRouterApi'),
-        '/*/*',
-      ]),
+      SourceArn: cf.arn(
+        'execute-api',
+        cf.join('', [cf.ref('SlackRouterApi'), '/*/*'])
+      ),
     },
   },
 }
 
-module.exports = { Resources }
+const lambda = new cf.shortcuts.Lambda({
+  LogicalName: 'SlackRouterLambda',
+  FunctionName: cf.join('-', [cf.stackName, 'slack-lambda-router']),
+  Handler: 'cloudformation/slack-router-lambda.handler',
+  Code: {
+    S3Bucket: cf.ref('BucketName'),
+    S3Key: cf.join('', ['bundles/slack-bots/', cf.ref('GitSha'), '.zip']),
+  },
+  Environment: {
+    Variables: {
+      AWS_ACCOUNT_ID: cf.accountId,
+    },
+  },
+  Runtime: 'nodejs12.x',
+  Timeout: '60',
+  Statement: [
+    {
+      Effect: 'Allow',
+      Action: 'ssm:GetParameter',
+      Resource: cf.sub(
+        'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/slack-router-signing-secret'
+      ),
+    },
+  ],
+  Tags: [
+    {
+      project: 'slackbot',
+      permissions: cf.join('-', ['slackbot', cf.stackName, 'GetParameter']),
+      trigger: cf.join('-', [
+        'slackbot',
+        cf.stackName,
+        cf.ref('SlackRouterApi'),
+      ]),
+    },
+  ],
+})
+
+module.exports = cf.merge({ Parameters, Resources }, lambda)

@@ -1,41 +1,41 @@
 const cf = require('@mapbox/cloudfriend')
 
 const Resources = {
-  TmStatsProjectLambda: {
+  OsmChaStatsLambda: {
     Type: 'AWS::Lambda::Function',
     Properties: {
-      FunctionName: 'tm-stats-project',
-      Handler: 'tm-stats-project-lambda.handler',
+      FunctionName: 'osmcha-stats',
+      Handler: 'osmcha-stats-lambda.handler',
       Role: cf.sub(
         'arn:aws:iam::${AWS::AccountId}:role/service-role/test-slack-router-role-4hs4dpro'
       ),
       Code: {
         S3Bucket: 'lambda-andria',
-        S3Key: 'tm-stats-project.zip',
+        S3Key: 'osmcha-stats.zip',
       },
       Runtime: 'nodejs12.x',
       Timeout: '30',
     },
   },
-  TmStatsProjectSNS: {
+  OsmChaStatsSNS: {
     Type: 'AWS::SNS::Topic',
     Properties: {
-      TopicName: 'tm-stats-project',
+      TopicName: 'osmcha-stats',
       Subscription: [
         {
-          Endpoint: cf.getAtt('TmStatsProjectLambda', 'Arn'),
+          Endpoint: cf.getAtt('OsmChaStatsLambda', 'Arn'),
           Protocol: 'lambda',
         },
       ],
     },
   },
-  TmStatsProjectPermission: {
+  OsmChaStatsPermission: {
     Type: 'AWS::Lambda::Permission',
     Properties: {
       Action: 'lambda:InvokeFunction',
-      FunctionName: cf.ref('TmStatsProjectLambda'),
+      FunctionName: cf.ref('OsmChaStatsLambda'),
       Principal: 'sns.amazonaws.com',
-      SourceArn: cf.ref('TmStatsProjectSNS'),
+      SourceArn: cf.ref('OsmChaStatsSNS'),
     },
   },
 }

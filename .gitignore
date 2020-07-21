@@ -60,8 +60,5 @@ typings/
 # next.js build output
 .next
 
-# formatting config
-*.prettierrc*
-
 # Mac Config file
 *.DS_Store*
