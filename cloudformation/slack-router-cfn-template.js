@@ -91,17 +91,10 @@ const Resources = {
       Action: 'lambda:InvokeFunction',
       FunctionName: cf.ref('SlackRouterLambda'),
       Principal: 'apigateway.amazonaws.com',
-      SourceArn: cf.join('', [
-        'arn:',
-        cf.partition,
-        ':execute-api:',
-        cf.region,
-        ':',
-        cf.accountId,
-        ':',
-        cf.ref('SlackRouterApi'),
-        '/*/*',
-      ]),
+      SourceArn: cf.arn(
+        'execute-api',
+        cf.join('', [cf.ref('SlackRouterApi'), '/*/*'])
+      ),
     },
   },
 }
