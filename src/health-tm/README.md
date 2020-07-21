@@ -1,5 +1,5 @@
 # /health-tm Slack slash command
-Checks the status of the Tasking Manager and return its current status plus other pertinent information such as number of mappers currently online and total number of projects hosted in Tasking Manager
+Checks the status of the Tasking Manager and return its current status plus other pertinent information such as number of mappers currently online and total number of projects hosted in Tasking Manager.
 
 ## How to use
 Write `/health-tm` in the message field of any Slack channel or direct message. The result will be showed only to the user who called the command.
