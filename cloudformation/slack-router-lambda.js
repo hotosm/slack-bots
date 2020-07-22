@@ -14,7 +14,7 @@ function getSSMConnection() {
 
 let snsConnection
 function getSNSConnection() {
-  if (snsConnection) return ssmConnection
+  if (snsConnection) return snsConnection
 
   snsConnection = new AWS.SNS()
   return snsConnection
@@ -41,21 +41,19 @@ async function verifyRequest(req) {
     Name: 'slack-router-signing-secret',
     WithDecryption: true,
   }
-
   const ssm = getSSMConnection()
+
   const ssmResult = await ssm.getParameter(ssmParams).promise()
   const slackSecret = ssmResult.Parameter.Value
-
   const body = req.body
-  const signature = req.headers['X-Slack-Signature']
-  const timestamp = req.headers['x-Slack-Request-Timestamp']
+  const signature = req.headers['x-slack-signature']
+  const timestamp = req.headers['x-slack-request-timestamp']
   const hmac = crypto.createHmac('sha256', slackSecret)
   const [version, hash] = signature.split('=')
 
   // Check if timestamp is within five minutes
   const fiveMinutesAgo = ~~(Date.now() / 1000) - 60 * 5
   if (timestamp < fiveMinutesAgo) return false
-
   hmac.update(`${version}:${timestamp}:${body}`)
 
   // Check if request signature matches expected value
@@ -69,7 +67,7 @@ exports.handler = async (event, context) => {
   context.callbackWaitsForEmptyEventLoop = false
 
   try {
-    const isValidRequest = await verifyRequest()
+    const isValidRequest = await verifyRequest(event)
     if (!isValidRequest) {
       throw new Error('Request verification failed')
     }
