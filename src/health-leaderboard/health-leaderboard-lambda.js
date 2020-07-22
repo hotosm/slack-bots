@@ -29,6 +29,43 @@ const getLeaderboardStatus = (overpassTime, leaderboardTime) => {
   return `${Math.trunc(difference / DAY_IN_MINUTES)} day(s) behind`
 }
 
+const buildSlackMessage = (latestLeaderboardTime, latestOverpassTime) => {
+  const leaderboardStatus = getLeaderboardStatus(
+    latestOverpassTime,
+    latestLeaderboardTime
+  )
+  return {
+    response_type: 'ephemeral',
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `:calendar: Missing Maps Leaderboard data is _${leaderboardStatus}_.`,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `:small_orange_diamond: Feature count and user stats were last updated on *${getDateFromOsmTimestamp(
+            latestLeaderboardTime
+          )}*`,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `:small_orange_diamond: Changeset and edit count is from *${getDateFromOsmTimestamp(
+            latestOverpassTime
+          )}*.`,
+        },
+      },
+    ],
+  }
+}
+
 const sendToSlack = async (responseURL, message) => {
   await fetch(responseURL, {
     method: 'post',
@@ -49,7 +86,7 @@ exports.handler = async (event) => {
       fetch(OSM_STATS_URL),
     ])
 
-    if (overpassRes.status != 200 || osmStatsRes.status != 200) {
+    if (overpassRes.status !== 200 || osmStatsRes.status !== 200) {
       throw new Error('Overpass or OSM Stats API call failed')
     }
 
@@ -59,46 +96,14 @@ exports.handler = async (event) => {
     ])
 
     const osmAugmentedDiffs = osmStats.find(
-      (object) => object.component === 'augmented diffs'
+      (item) => item.component === 'augmented diffs'
     )
-    const latestLeaderboardTime = osmAugmentedDiffs.id
+    const { id: latestLeaderboardTime } = osmAugmentedDiffs
 
-    const leaderboardStatus = getLeaderboardStatus(
-      latestOverpassTime,
-      latestLeaderboardTime
+    const slackMessage = buildSlackMessage(
+      latestLeaderboardTime,
+      latestOverpassTime
     )
-
-    const slackMessage = {
-      response_type: 'ephemeral',
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `:calendar: Missing Maps Leaderboard data is _${leaderboardStatus}_.`,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `:small_orange_diamond: Feature count and user stats were last updated on *${getDateFromOsmTimestamp(
-              latestLeaderboardTime
-            )}*`,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `:small_orange_diamond: Changeset and edit count is from *${getDateFromOsmTimestamp(
-              latestOverpassTime
-            )}*.`,
-          },
-        },
-      ],
-    }
-
     await sendToSlack(responseURL, slackMessage)
   } catch (error) {
     console.error(error)
