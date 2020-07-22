@@ -6,7 +6,19 @@ const TM_STATUS_URL =
 const TM_STATISTICS_URL =
   'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
 
-const successBlock = (mappersOnline, totalProjects) => {
+const TM_ERROR_BLOCK = {
+  response_type: 'ephemeral',
+  text:
+    ':heavy_exclamation_mark: The Tasking Manager cannot be reached right now. Please try again and if the error persists, post a message at <#C319P09PB>',
+}
+
+const ERROR_BLOCK = {
+  response_type: 'ephemeral',
+  text:
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+}
+
+const buildSuccessBlock = (mappersOnline, totalProjects) => {
   return {
     response_type: 'ephemeral',
     blocks: [
@@ -34,18 +46,6 @@ const successBlock = (mappersOnline, totalProjects) => {
   }
 }
 
-const serverErrorBlock = {
-  response_type: 'ephemeral',
-  text:
-    ':heavy_exclamation_mark: The Tasking Manager cannot be reached right now. Please try again and if the error persists, post a message at <#C319P09PB>',
-}
-
-const errorBlock = {
-  response_type: 'ephemeral',
-  text:
-    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
-}
-
 const sendToSlack = async (responseURL, message) => {
   await fetch(responseURL, {
     method: 'post',
@@ -66,19 +66,19 @@ exports.handler = async (event) => {
       fetch(TM_STATISTICS_URL),
     ])
 
-    if (tmStatusRes.status != 200 || tmStatisticsRes.status != 200) {
-      await sendToSlack(responseURL, serverErrorBlock)
+    if (tmStatusRes.status !== 200 || tmStatisticsRes.status !== 200) {
+      await sendToSlack(responseURL, TM_ERROR_BLOCK)
       return
     }
 
     const { mappersOnline, totalProjects } = await tmStatisticsRes.json()
 
-    const slackMessage = successBlock(mappersOnline, totalProjects)
+    const slackMessage = buildSuccessBlock(mappersOnline, totalProjects)
 
     await sendToSlack(responseURL, slackMessage)
   } catch (error) {
     console.error(error)
 
-    await sendToSlack(responseURL, errorBlock)
+    await sendToSlack(responseURL, ERROR_BLOCK)
   }
 }
