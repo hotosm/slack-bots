@@ -23,6 +23,10 @@ const Resources = {
           Protocol: 'lambda',
         },
       ],
+      Tags: [
+        { Key: 'Name', Value: 'health-leaderboard-sns' },
+        { Key: 'Project', Value: 'slackbot' },
+      ],
     },
   },
   HealthLeaderboardPermission: {
@@ -52,7 +56,7 @@ const lambda = new cf.shortcuts.Lambda({
   Runtime: 'nodejs12.x',
   Timeout: '60',
   Tags: [
-    { Key: 'Name', Value: 'health-leaderboard' },
+    { Key: 'Name', Value: 'health-leaderboard-lambda' },
     { Key: 'Project', Value: 'slackbot' },
   ],
 })
