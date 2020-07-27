@@ -45,7 +45,7 @@ const lambda = new cf.shortcuts.Lambda({
   },
   Environment: {
     Variables: {
-      AWS_ACCOUNT_ID: cf.accountId,
+      TM_API_BASE_URL: '{{resolve:ssm:tasking-manager-api-url:1}}',
     },
   },
   Runtime: 'nodejs12.x',

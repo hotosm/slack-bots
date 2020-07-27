@@ -1,10 +1,10 @@
 const fetch = require('node-fetch')
 
-const TM_STATUS_URL =
-  'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/heartbeat/'
+const TM_API_BASE_URL = process.env.TM_API_BASE_URL
 
+const TM_STATUS_URL = TM_API_BASE_URL + 'system/heartbeat/'
 const TM_STATISTICS_URL =
-  'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true'
+  TM_API_BASE_URL + 'system/statistics/?abbreviated=true'
 
 const TM_ERROR_BLOCK = {
   response_type: 'ephemeral',
