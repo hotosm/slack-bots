@@ -1,3 +1,4 @@
+const AWS = require('aws-sdk')
 const fetch = require('node-fetch')
 
 const {
@@ -8,12 +9,16 @@ const {
 } = require('./slack-utils')
 
 const lastMonthUnixTime = new Date(Date.now() - 2592000000).toISOString()
+const OSMCHA_API_BASE_URL = process.env.OSMCHA_API_BASE_URL
+const TM_API_BASE_URL = process.env.TM_API_BASE_URL
 
-const OSMCHA_REQUEST_HEADER = {
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization: 'Token b0f566a5e9113e293a8a2a753af74d59106b4517', //change this with parameter store value
-  },
+const buildOsmchaRequestHeader = (token) => {
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+    },
+  }
 }
 
 const getFilterArray = (filter) => {
@@ -40,7 +45,11 @@ const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
   return `${BASE_URL}?filters=${encodeURIComponent(JSON.stringify(filters))}`
 }
 
-const fetchChagesetData = async (osmChaSuspectURL, osmChaStatsURL) => {
+const fetchChagesetData = async (
+  osmChaSuspectURL,
+  osmChaStatsURL,
+  OSMCHA_REQUEST_HEADER
+) => {
   const [osmChaSuspectRes, osmChaStatsRes] = await Promise.all([
     fetch(osmChaSuspectURL, OSMCHA_REQUEST_HEADER),
     fetch(osmChaStatsURL, OSMCHA_REQUEST_HEADER),
@@ -67,11 +76,16 @@ const fetchChagesetData = async (osmChaSuspectURL, osmChaStatsURL) => {
   )
 }
 
-const fetchChagesetDataWithRetry = async (osmChaSuspectURL, osmChaStatsURL) => {
+const fetchChagesetDataWithRetry = async (
+  osmChaSuspectURL,
+  osmChaStatsURL,
+  OSMCHA_REQUEST_HEADER
+) => {
   try {
     const { changesets, count, reasons } = await fetchChagesetData(
       osmChaSuspectURL,
-      osmChaStatsURL
+      osmChaStatsURL,
+      OSMCHA_REQUEST_HEADER
     )
     return { count, changesets, reasons, complete: true }
   } catch (error) {
@@ -83,26 +97,35 @@ const fetchChagesetDataWithRetry = async (osmChaSuspectURL, osmChaStatsURL) => {
 
     const { changesets, count, reasons } = await fetchChagesetData(
       osmChaNewSuspectURL,
-      osmChaNewStatsURL
+      osmChaNewStatsURL,
+      OSMCHA_REQUEST_HEADER
     )
     return { count, changesets, reasons, complete: false }
   }
 }
 
-const commentChangesets = async (responseURL, changesetComment) => {
+const commentChangesets = async (
+  responseURL,
+  changesetComment,
+  OSMCHA_REQUEST_HEADER
+) => {
   const osmChaURL = createOsmChaUrl({ changesetComment })
 
   try {
     const encodedComment = encodeURIComponent(changesetComment)
-    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?comment=${encodedComment}` // move base URL to Parameter Store
-    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?comment=${encodedComment}` // move base URL to Parameter Store
+    const osmChaSuspectURL = `${OSMCHA_API_BASE_URL}changesets/suspect/?comment=${encodedComment}`
+    const osmChaStatsURL = `${OSMCHA_API_BASE_URL}stats/?comment=${encodedComment}`
 
     const {
       count,
       changesets,
       reasons,
       complete,
-    } = await fetchChagesetDataWithRetry(osmChaSuspectURL, osmChaStatsURL)
+    } = await fetchChagesetDataWithRetry(
+      osmChaSuspectURL,
+      osmChaStatsURL,
+      OSMCHA_REQUEST_HEADER
+    )
 
     const filterDescriptor = complete
       ? `<${osmChaURL}|comment(s): ${changesetComment}>`
@@ -134,9 +157,13 @@ const commentChangesets = async (responseURL, changesetComment) => {
   }
 }
 
-const projectChangesets = async (responseURL, projectId) => {
+const projectChangesets = async (
+  responseURL,
+  projectId,
+  OSMCHA_REQUEST_HEADER
+) => {
   try {
-    const taskingManagerURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/?as_file=false&abbreviated=false` // move base URL to Parameter Store
+    const taskingManagerURL = `${TM_API_BASE_URL}projects/${projectId}/?as_file=false&abbreviated=false`
     const tmProjectRes = await fetch(taskingManagerURL)
 
     if (tmProjectRes.status !== 200) {
@@ -153,12 +180,12 @@ const projectChangesets = async (responseURL, projectId) => {
     const aoiBBOX = aoiBBOXArray.join(',')
     const dateCreated = created.substring(0, 10)
 
-    const osmChaSuspectURL = `https://osmcha.org/api/v1/changesets/suspect/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
+    const osmChaSuspectURL = `${OSMCHA_API_BASE_URL}changesets/suspect/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
       changesetComment
-    )}&in_bbox=${aoiBBOX}` // move base URL to Parameter Store
-    const osmChaStatsURL = `https://osmcha.org/api/v1/stats/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
+    )}&in_bbox=${aoiBBOX}`
+    const osmChaStatsURL = `${OSMCHA_API_BASE_URL}stats/?area_lt=2&date__gte=${dateCreated}&comment=${encodeURIComponent(
       changesetComment
-    )}&in_bbox=${aoiBBOX}` // move base URL to Parameter Store
+    )}&in_bbox=${aoiBBOX}`
 
     const osmChaURL = createOsmChaUrl({
       aoiBBOX,
@@ -170,7 +197,8 @@ const projectChangesets = async (responseURL, projectId) => {
 
     const { count, changesets, reasons } = await fetchChagesetData(
       osmChaSuspectURL,
-      osmChaStatsURL
+      osmChaStatsURL,
+      OSMCHA_REQUEST_HEADER
     )
 
     const projectBlock = createBlock(
@@ -234,9 +262,26 @@ exports.handler = async (event) => {
     )
     const parameterHasNonDigit = !!spacedParameters.match(/\D/)
 
-    ;(await parameterHasNonDigit)
-      ? commentChangesets(responseURL, spacedParameters)
-      : projectChangesets(responseURL, commandParameters)
+    const ssmParams = {
+      Name: 'osmcha-token',
+      WithDecryption: true,
+    }
+    const ssmResult = await new AWS.SSM().getParameter(ssmParams).promise()
+    const osmChaToken = ssmResult.Parameter.Value
+
+    const OSMCHA_REQUEST_HEADER = buildOsmchaRequestHeader(osmChaToken)
+
+    parameterHasNonDigit
+      ? await commentChangesets(
+          responseURL,
+          spacedParameters,
+          OSMCHA_REQUEST_HEADER
+        )
+      : await projectChangesets(
+          responseURL,
+          commandParameters,
+          OSMCHA_REQUEST_HEADER
+        )
   } catch (error) {
     console.error(error)
 
