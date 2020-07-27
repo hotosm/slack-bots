@@ -104,15 +104,8 @@ const lambda = new cf.shortcuts.Lambda({
     },
   ],
   Tags: [
-    { Key: 'project', Value: 'slackbot' },
-    {
-      Key: 'permissions',
-      Value: cf.join('-', ['slackbot', cf.stackName, 'GetParameter']),
-    },
-    {
-      Key: 'trigger',
-      Value: cf.join('-', ['slackbot', cf.stackName, cf.ref('SlackRouterApi')]),
-    },
+    { Key: 'Name', Value: 'slack-router' },
+    { Key: 'Project', Value: 'slackbot' },
   ],
 })
 
