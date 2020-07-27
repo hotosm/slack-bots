@@ -23,6 +23,10 @@ const Resources = {
           Protocol: 'lambda',
         },
       ],
+      Tags: [
+        { Key: 'Name', Value: 'command-help-lambda' },
+        { Key: 'Project', Value: 'slackbot' },
+      ],
     },
   },
   CommandHelpPermission: {
@@ -46,7 +50,7 @@ const lambda = new cf.shortcuts.Lambda({
   Runtime: 'nodejs12.x',
   Timeout: '60',
   Tags: [
-    { Key: 'Name', Value: 'command-help' },
+    { Key: 'Name', Value: 'command-help-lambda' },
     { Key: 'Project', Value: 'slackbot' },
   ],
 })
