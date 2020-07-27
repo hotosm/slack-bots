@@ -23,6 +23,10 @@ const Resources = {
           Protocol: 'lambda',
         },
       ],
+      Tags: [
+        { Key: 'Name', Value: 'tm-stats-sns' },
+        { Key: 'Project', Value: 'slackbot' },
+      ],
     },
   },
   TmStatsPermission: {
@@ -32,22 +36,6 @@ const Resources = {
       FunctionName: cf.ref('TmStatsLambda'),
       Principal: 'sns.amazonaws.com',
       SourceArn: cf.ref('TmStatsSNS'),
-    },
-  },
-  TmStatsLambda: {
-    Type: 'AWS::Lambda::Function',
-    Properties: {
-      FunctionName: 'tm-stats',
-      Handler: 'tm-stats-lambda.handler',
-      Role: cf.sub(
-        'arn:aws:iam::${AWS::AccountId}:role/service-role/test-slack-router-role-4hs4dpro'
-      ),
-      Code: {
-        S3Bucket: 'lambda-andria',
-        S3Key: 'tm-stats.zip',
-      },
-      Runtime: 'nodejs12.x',
-      Timeout: '30',
     },
   },
 }
@@ -78,7 +66,7 @@ const lambda = new cf.shortcuts.Lambda({
     },
   ],
   Tags: [
-    { Key: 'Name', Value: 'tm-stats' },
+    { Key: 'Name', Value: 'tm-stats-lambda' },
     { Key: 'Project', Value: 'slackbot' },
   ],
 })
