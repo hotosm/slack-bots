@@ -18,6 +18,10 @@ const Resources = {
     Properties: {
       Name: 'slack-router-api',
       ProtocolType: 'HTTP',
+      Tags: [
+        { Key: 'Name', Value: 'slack-router-api' },
+        { Key: 'Project', Value: 'slackbot' },
+      ],
     },
   },
   SlackToLambdaIntegration: {
@@ -104,7 +108,7 @@ const lambda = new cf.shortcuts.Lambda({
     },
   ],
   Tags: [
-    { Key: 'Name', Value: 'slack-router' },
+    { Key: 'Name', Value: 'slack-router-lambda' },
     { Key: 'Project', Value: 'slackbot' },
   ],
 })
