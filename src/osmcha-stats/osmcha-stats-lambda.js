@@ -9,6 +9,7 @@ const {
 } = require('./slack-utils')
 
 const lastMonthUnixTime = new Date(Date.now() - 2592000000).toISOString()
+const OSMCHA_BASE_URL = process.env.OSMCHA_BASE_URL
 const OSMCHA_API_BASE_URL = process.env.OSMCHA_API_BASE_URL
 const TM_API_BASE_URL = process.env.TM_API_BASE_URL
 
@@ -30,7 +31,6 @@ const getFilterArray = (filter) => {
   ]
 }
 
-const BASE_URL = 'https://osmcha.org/'
 const AREA_LT_VALUE = 2
 const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
   const filters = {
@@ -42,7 +42,9 @@ const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
     ...(changesetComment ? { comment: getFilterArray(changesetComment) } : {}),
   }
 
-  return `${BASE_URL}?filters=${encodeURIComponent(JSON.stringify(filters))}`
+  return `${OSMCHA_BASE_URL}?filters=${encodeURIComponent(
+    JSON.stringify(filters)
+  )}`
 }
 
 const fetchChagesetData = async (

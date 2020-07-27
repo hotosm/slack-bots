@@ -61,6 +61,7 @@ const lambda = new cf.shortcuts.Lambda({
   },
   Environment: {
     Variables: {
+      OSMCHA_BASE_URL: '{{resolve:ssm:osmcha-url:1}}',
       OSMCHA_API_BASE_URL: '{{resolve:ssm:osmcha-api-url:1}}',
       TM_API_BASE_URL: '{{resolve:ssm:tasking-manager-api-url:1}}',
     },
