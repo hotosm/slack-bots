@@ -50,8 +50,8 @@ const fetchChagesetData = async (osmChaSuspectURL, osmChaStatsURL) => {
   const { status: statsStatus } = osmChaStatsRes
 
   const [{ count }, { changesets, reasons }] = await Promise.all([
-    osmChaSuspectLastMonthRes.json(),
-    osmChaStatsLastMonthRes.json(),
+    osmChaSuspectRes.json(),
+    osmChaStatsRes.json(),
   ])
 
   if (suspectStatus === 200 && statsStatus == 200) {

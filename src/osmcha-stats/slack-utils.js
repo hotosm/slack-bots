@@ -1,3 +1,5 @@
+const fetch = require('node-fetch')
+
 exports.ERROR_MESSAGE = {
   response_type: 'ephemeral',
   text:
@@ -101,7 +103,7 @@ exports.createBlock = (
   )
 
   const flagArray = changesetFlags.reduce((accumulator, flag) => {
-    if (flag.changesets != 0) {
+    if (flag.changesets !== 0) {
       accumulator.push({
         type: 'mrkdwn',
         text: `*${flag.name}*: ${flag.changesets}`,
