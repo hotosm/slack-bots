@@ -43,11 +43,6 @@ const lambda = new cf.shortcuts.Lambda({
     S3Bucket: cf.ref('BucketName'),
     S3Key: cf.join('', ['bundles/slack-bots/', cf.ref('GitSha'), '.zip']),
   },
-  Environment: {
-    Variables: {
-      TM_API_BASE_URL: '{{resolve:ssm:tasking-manager-api-url:1}}',
-    },
-  },
   Runtime: 'nodejs12.x',
   Timeout: '60',
   Tags: [
