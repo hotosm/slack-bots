@@ -23,6 +23,10 @@ const Resources = {
           Protocol: 'lambda',
         },
       ],
+      Tags: [
+        { Key: 'Name', Value: 'osmcha-stats-sns' },
+        { Key: 'Project', Value: 'slackbot' },
+      ],
     },
   },
   OsmChaStatsPermission: {
@@ -32,22 +36,6 @@ const Resources = {
       FunctionName: cf.ref('OsmChaStatsLambda'),
       Principal: 'sns.amazonaws.com',
       SourceArn: cf.ref('OsmChaStatsSNS'),
-    },
-  },
-  OsmChaStatsLambda: {
-    Type: 'AWS::Lambda::Function',
-    Properties: {
-      FunctionName: 'osmcha-stats',
-      Handler: 'osmcha-stats-lambda.handler',
-      Role: cf.sub(
-        'arn:aws:iam::${AWS::AccountId}:role/service-role/test-slack-router-role-4hs4dpro'
-      ),
-      Code: {
-        S3Bucket: 'lambda-andria',
-        S3Key: 'osmcha-stats.zip',
-      },
-      Runtime: 'nodejs12.x',
-      Timeout: '30',
     },
   },
 }
@@ -78,7 +66,7 @@ const lambda = new cf.shortcuts.Lambda({
     },
   ],
   Tags: [
-    { Key: 'Name', Value: 'osmcha-stats' },
+    { Key: 'Name', Value: 'osmcha-stats-lambda' },
     { Key: 'Project', Value: 'slackbot' },
   ],
 })
