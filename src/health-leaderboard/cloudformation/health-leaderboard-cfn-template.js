@@ -45,11 +45,12 @@ const lambda = new cf.shortcuts.Lambda({
   },
   Environment: {
     Variables: {
-      AWS_ACCOUNT_ID: cf.accountId,
+      OSM_STATS_API_BASE_URL: '{{resolve:ssm:osm-stats-api-url:1}}',
+      OVERPASS_API_BASE_URL: '{{resolve:ssm:overpass-api-url:1}}',
     },
   },
   Runtime: 'nodejs12.x',
   Timeout: '60',
 })
 
-module.exports = module.exports = cf.merge({ Parameters, Resources }, lambda)
+module.exports = cf.merge({ Parameters, Resources }, lambda)

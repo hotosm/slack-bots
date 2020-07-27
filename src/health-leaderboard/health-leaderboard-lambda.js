@@ -3,12 +3,13 @@ const fetch = require('node-fetch')
 const ERROR_MESSAGE = {
   response_type: 'ephemeral',
   text:
-    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
 }
 
 const OSM_EPOCH = 22457216 // Wed, 12 Sep 2012 06:56:00 UTC in minutes
-const OVERPASS_API_URL = 'https://overpass-api.de/api/augmented_diff_status' // move to Parameter Store
-const OSM_STATS_URL = 'http://osm-stats-production-api.azurewebsites.net/status' // move to Parameter Store
+const OVERPASS_API_URL =
+  process.env.OVERPASS_API_BASE_URL + 'augmented_diff_status'
+const OSM_STATS_URL = process.env.OSM_STATS_API_BASE_URL + 'status'
 const DAY_IN_MINUTES = 60 * 24
 
 function getDateFromOsmTimestamp(osmTimestamp) {
