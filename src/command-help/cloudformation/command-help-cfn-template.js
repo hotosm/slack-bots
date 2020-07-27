@@ -24,7 +24,7 @@ const Resources = {
         },
       ],
       Tags: [
-        { Key: 'Name', Value: 'command-help-lambda' },
+        { Key: 'Name', Value: 'command-help-sns' },
         { Key: 'Project', Value: 'slackbot' },
       ],
     },
