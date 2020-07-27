@@ -45,7 +45,7 @@ async function verifyRequest(req) {
 
   const ssmResult = await ssm.getParameter(ssmParams).promise()
   const slackSecret = ssmResult.Parameter.Value
-  const body = req.body
+  const body = Buffer.from(req.body, 'base64').toString('ascii')
   const signature = req.headers['x-slack-signature']
   const timestamp = req.headers['x-slack-request-timestamp']
   const hmac = crypto.createHmac('sha256', slackSecret)
@@ -72,6 +72,7 @@ exports.handler = async (event, context) => {
       throw new Error('Request verification failed')
     }
 
+    console.log('Request verification successful')
     const eventBody = parseBody(event)
     const command = decodeURIComponent(eventBody.command).substring(1)
 
