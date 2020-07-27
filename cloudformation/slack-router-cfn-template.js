@@ -82,7 +82,6 @@ const Resources = {
 
 const lambda = new cf.shortcuts.Lambda({
   LogicalName: 'SlackRouterLambda',
-  FunctionName: cf.join('-', [cf.stackName, 'slack-lambda-router']),
   Handler: 'cloudformation/slack-router-lambda.handler',
   Code: {
     S3Bucket: cf.ref('BucketName'),
@@ -105,15 +104,8 @@ const lambda = new cf.shortcuts.Lambda({
     },
   ],
   Tags: [
-    {
-      project: 'slackbot',
-      permissions: cf.join('-', ['slackbot', cf.stackName, 'GetParameter']),
-      trigger: cf.join('-', [
-        'slackbot',
-        cf.stackName,
-        cf.ref('SlackRouterApi'),
-      ]),
-    },
+    { Key: 'Name', Value: 'slack-router' },
+    { Key: 'Project', Value: 'slackbot' },
   ],
 })
 
