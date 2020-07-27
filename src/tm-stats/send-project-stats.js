@@ -2,10 +2,15 @@ const fetch = require('node-fetch')
 
 const { ERROR_MESSAGE, sendToSlack } = require('./slack-utils')
 
-const sendProjectStats = async (responseURL, projectId) => {
+const sendProjectStats = async (
+  responseURL,
+  tmApiBaseUrl,
+  tmBaseUrl,
+  projectId
+) => {
   try {
-    const projectSummaryURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/queries/summary/` // move base URL to Parameter Store
-    const projectStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/` // move base URL to Parameter Store
+    const projectSummaryURL = `${tmApiBaseUrl}projects/${projectId}/queries/summary/`
+    const projectStatsURL = `${tmApiBaseUrl}projects/${projectId}/statistics/`
 
     const [projectSummaryRes, projectStatsRes] = await Promise.all([
       fetch(projectSummaryURL),
@@ -21,7 +26,7 @@ const sendProjectStats = async (responseURL, projectId) => {
       { 'projectArea(in sq.km)': projectArea, totalMappers, totalTasks },
     ] = await Promise.all([projectSummaryRes.json(), projectStatsRes.json()])
 
-    const projectURL = `https://tasks.hotosm.org/project/${projectId}` // move base URL to Parameter Store
+    const projectURL = `${tmBaseUrl}project/${projectId}`
 
     const projectStatsBlock = {
       response_type: 'ephemeral',

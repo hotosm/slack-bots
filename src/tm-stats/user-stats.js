@@ -42,22 +42,28 @@ const formatElapsedTime = (secondsElapsed) => {
   return formattedTime
 }
 
-// TODO: make this a function buildTmRequestHeader(token)
-const TM_REQUEST_HEADER = {
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization:
-      'Token TVRBNE9UUTNNalEuWHdQb2RBLnExRHJmZERPZ2NLSXJ6Vk45bmNxckFuV0xfVQ==', // change this with parameter store value
-  },
+const buildTmRequestHeader = (token) => {
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+    },
+  }
 }
 
-const sendUserStats = async (responseURL, userName) => {
-  // TODO: take token as param
+const sendUserStats = async (
+  responseURL,
+  tmToken,
+  tmApiBaseUrl,
+  tmBaseUrl,
+  userName
+) => {
   try {
-    const userStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/users/${encodeURIComponent(
+    const userStatsURL = `${tmApiBaseUrl}users/${encodeURIComponent(
       userName
-    )}/statistics/` // move base URL to Parameter Store
+    )}/statistics/`
 
+    const TM_REQUEST_HEADER = buildTmRequestHeader(tmToken)
     const userStatsRes = await fetch(userStatsURL, TM_REQUEST_HEADER)
 
     if (userStatsRes.status !== 200) {
@@ -80,9 +86,7 @@ const sendUserStats = async (responseURL, userName) => {
       tasksValidatedByOthers,
     } = await userStatsRes.json()
 
-    const userTmURL = `https://tasks.hotosm.org/users/${encodeURIComponent(
-      userName
-    )}`
+    const userTmURL = `${tmBaseUrl}users/${encodeURIComponent(userName)}`
 
     const userStatsBlock = {
       response_type: 'ephemeral',
@@ -164,14 +168,21 @@ const sendUserStats = async (responseURL, userName) => {
   }
 }
 
-const sendProjectUserStats = async (responseURL, projectId, userName) => {
-  // TODO: take token as param
+const sendProjectUserStats = async (
+  responseURL,
+  tmToken,
+  tmApiBaseUrl,
+  tmBaseUrl,
+  projectId,
+  userName
+) => {
   try {
-    const projectUserStatsURL = `https://tasking-manager-tm4-production-api.hotosm.org/api/v2/projects/${projectId}/statistics/queries/${encodeURIComponent(
+    const projectUserStatsURL = `${tmApiBaseUrl}projects/${projectId}/statistics/queries/${encodeURIComponent(
       userName
-    )}/` // move base URL to Parameter Store
-    const projectURL = `https://tasks.hotosm.org/project/${projectId}` // move base URL to Parameter Store
+    )}/`
+    const projectURL = `${tmBaseUrl}project/${projectId}`
 
+    const TM_REQUEST_HEADER = buildTmRequestHeader(tmToken)
     const projectUserStatsRes = await fetch(
       projectUserStatsURL,
       TM_REQUEST_HEADER

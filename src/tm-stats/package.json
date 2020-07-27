@@ -1,0 +1,22 @@
+{
+  "name": "tm-stats",
+  "version": "1.0.0",
+  "description": "Returns information and stats on the Tasking Manager depending on user-input parameters",
+  "main": "tm-stats-project-lambda.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotosm/slack-bots.git"
+  },
+  "author": "Andria Hibe <andriacohibe@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hotosm/slack-bots/issues"
+  },
+  "homepage": "https://github.com/hotosm/slack-bots#readme",
+  "dependencies": {
+    "node-fetch": "^2.6.0"
+  }
+}

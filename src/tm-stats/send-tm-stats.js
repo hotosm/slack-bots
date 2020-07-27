@@ -2,12 +2,10 @@ const fetch = require('node-fetch')
 
 const { ERROR_MESSAGE, sendToSlack } = require('./slack-utils')
 
-const TM_STATS_URL =
-  'https://tasking-manager-tm4-production-api.hotosm.org/api/v2/system/statistics/?abbreviated=true' // move base URL to Parameter Store
-
-const sendTaskingManagerStats = async (responseURL) => {
+const sendTaskingManagerStats = async (responseURL, tmApiBaseUrl) => {
   try {
-    const taskingManagerStatsRes = await fetch(TM_STATS_URL)
+    const tmStatsURL = `${tmApiBaseUrl}system/statistics/?abbreviated=true`
+    const taskingManagerStatsRes = await fetch(tmStatsURL)
 
     if (taskingManagerStatsRes.status !== 200) {
       throw new Error('Cannot get Tasking Manager home page stats')

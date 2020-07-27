@@ -3,7 +3,7 @@ const fetch = require('node-fetch')
 exports.ERROR_MESSAGE = {
   response_type: 'ephemeral',
   text:
-    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>', // move to Parameter Store so it can be used for all generic errors?
+    ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
 }
 
 exports.USER_ERROR_BLOCK = {
