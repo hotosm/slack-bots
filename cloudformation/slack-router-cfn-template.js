@@ -18,6 +18,10 @@ const Resources = {
     Properties: {
       Name: 'slack-router-api',
       ProtocolType: 'HTTP',
+      Tags: [
+        { Key: 'Name', Value: 'slack-router-api' },
+        { Key: 'Project', Value: 'slackbot' },
+      ],
     },
   },
   SlackToLambdaIntegration: {
@@ -104,15 +108,8 @@ const lambda = new cf.shortcuts.Lambda({
     },
   ],
   Tags: [
-    { Key: 'project', Value: 'slackbot' },
-    {
-      Key: 'permissions',
-      Value: cf.join('-', ['slackbot', cf.stackName, 'GetParameter']),
-    },
-    {
-      Key: 'trigger',
-      Value: cf.join('-', ['slackbot', cf.stackName, cf.ref('SlackRouterApi')]),
-    },
+    { Key: 'Name', Value: 'slack-router-lambda' },
+    { Key: 'Project', Value: 'slackbot' },
   ],
 })
 
