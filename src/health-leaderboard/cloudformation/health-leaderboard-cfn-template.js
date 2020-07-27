@@ -51,6 +51,10 @@ const lambda = new cf.shortcuts.Lambda({
   },
   Runtime: 'nodejs12.x',
   Timeout: '60',
+  Tags: [
+    { Key: 'Name', Value: 'health-leaderboard' },
+    { Key: 'Project', Value: 'slackbot' },
+  ],
 })
 
 module.exports = cf.merge({ Parameters, Resources }, lambda)
