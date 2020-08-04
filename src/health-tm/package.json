@@ -4,7 +4,7 @@
   "description": "Returns the current status and other information regarding the Tasking Manager",
   "main": "health-tm-lambda.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tape health-tm-lambda.test.js | tap-dot"
   },
   "repository": {
     "type": "git",
@@ -14,5 +14,10 @@
   "license": "ISC",
   "dependencies": {
     "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "sinon": "^9.0.2",
+    "tap-dot": "^2.0.0",
+    "tape": "^5.0.1"
   }
 }
