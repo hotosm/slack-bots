@@ -1,7 +1,7 @@
-# Slack Bot
+# Slack Bots
 
 ## Description
-This slackbot projects has a routing setup for Slack bots, parsing and forwarding incoming messages to respective bots and all these are handled asynchronously. All the Slack bots utilises the data from various API endpoints to implement commands and automate tasks to improve HOT's internal communications and make it easier for members to get information from HOT tools.
+This slackbot project has a routing setup for Slack bots, parsing and forwarding incoming messages to respective bots which are all handled asynchronously. All the Slack bots utilise the data from various API endpoints to implement commands and automate tasks to improve HOT's internal communications and make it easier for members to get information from HOT tools.
 
 [Contribution](https://github.com/hotosm/slack-bots/blob/master/docs/contribute.md)  | [Dev Setup](https://github.com/hotosm/slack-bots/blob/master/docs/dev-setup.md) | [Architecture details](https://github.com/hotosm/slack-bots/blob/master/docs/architecture.md) | [Existing slash commands](https://github.com/hotosm/slack-bots/blob/master/docs/slash-commands.md)
 
@@ -32,7 +32,7 @@ E.g.
     │   ├── health-tm-lambda.js
     │   ├── health-tm-lambda.test.js
     │   └── package.json
-    ├── new-command
+    └── new-command
         ├── README.md
         ├── cloudformation
         │    └── new-command-cfn-template.js
