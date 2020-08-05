@@ -44,7 +44,7 @@ When working with Slack slash commands, the event object that the command lambda
                 "MessageId": "98e47b55-xxxx-xxxx-xxxx-2ccf3ad46aa5",
                 "TopicArn": "arn:xxx",
                 "Subject": "SNS from Slack Slash Command",
-                "Message": "{\"token\":\"xxxx\",\"team_id\":\"xxxxx\",\"team_domain\":\"hotosm\",\"channel_id\":\"xxxxx\",\"channel_name\":\"xxxxx",\"user_id\":\"xxxx\",\"user_name\":\"xxxx\",\"command\":\"%2Fcommand-name\",\"text\":\"i+am+a+parameter\",\"response_url\":\"https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT042xxxxx%2F1261935219462%2FYA9Hj7eqaYD29KiZMkp1AP2l\",\"trigger_id\":\"1292506069872.xxxx.e141f08809a67f8295815147128ca318\"}",
+                "Message": "{\"token\":\"xxxx\",\"team_id\":\"xxxx\",\"team_domain\":\"hotosm\",\"channel_id\":\"xxxx\",\"channel_name\":\"xxxx\",\"user_id\":\"xxxx\",\"user_name\":\"xxxx\",\"command\":\"%2Fcommand-name\",\"text\":\"i+am+a+parameter\",\"response_url\":\"https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT042xxxx%2F1268895xxxxx3%2FxqsA9bJP5JnteuIv8VWou6u8\",\"trigger_id\":\"1267317526581.xxxx.dce29256095d10e5a4c261ed8f57b848\"}",
                 "Timestamp": "2020-xx-xxT01:34:14.148Z",
                 "SignatureVersion": "1",
                 "Signature": "xxxxxx",
