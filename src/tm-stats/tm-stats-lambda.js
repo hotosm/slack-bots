@@ -44,7 +44,7 @@ exports.handler = async (event) => {
 
     // TODO: Add logic to get TM token (put it in the Parameter Store after acquiring?)
     const ssmParams = {
-      Name: 'tm-token', // double check name with cfn template
+      Name: 'tm-token',
       WithDecryption: true,
     }
     const ssmResult = await new AWS.SSM().getParameter(ssmParams).promise()

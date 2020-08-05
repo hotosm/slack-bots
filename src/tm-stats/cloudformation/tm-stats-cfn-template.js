@@ -56,12 +56,11 @@ const lambda = new cf.shortcuts.Lambda({
   Runtime: 'nodejs12.x',
   Timeout: '60',
   Statement: [
-    // include AddParam? Double check with tm token function
     {
       Effect: 'Allow',
       Action: 'ssm:GetParameter',
       Resource: cf.sub(
-        'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tm-token' // double check naming
+        'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tm-token'
       ),
     },
   ],
