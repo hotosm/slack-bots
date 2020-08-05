@@ -3,10 +3,10 @@
 ## Description
 This slackbot projects has a routing setup for Slack bots, parsing and forwarding incoming messages to respective bots and all these are handled asynchronously. All the Slack bots utilises the data from various API endpoints to implement commands and automate tasks to improve HOT's internal communications and make it easier for members to get information from HOT tools.
 
-[Contribution]() | [Existing slash commands]() | [Architecture details]()
+[Contribution](https://github.com/hotosm/slack-bots/blob/master/docs/contribute.md)  | [Dev Setup](https://github.com/hotosm/slack-bots/blob/master/docs/dev-setup.md) | [Architecture details](https://github.com/hotosm/slack-bots/blob/master/docs/architecture.md) | [Existing slash commands](https://github.com/hotosm/slack-bots/blob/master/docs/slash-commands.md)
 
 ### Folder structure
-Each commands has its own folder within the repo containing its own `package.json` if needed, cloudformation folder containing the command's cfn template, ReadMe file, and everything else that the command needs to function.
+Each command has its own folder within the repo containing its own `package.json` if needed, cloudformation folder containing the command's cfn template, ReadMe file, and everything else that the command needs to function.
 
 E.g.
 
@@ -23,18 +23,21 @@ E.g.
     │   ├── cloudformation
     │   │   └── health-leaderboard-cfn-template.js
     │   ├── health-leaderboard-lambda.js
+    │   ├── health-leaderboard-lambda.test.js
     │   └── package.json
     ├── health-tm
     │   ├── README.md
     │   ├── cloudformation
     │   │   └── health-tm-cfn-template.js
     │   ├── health-tm-lambda.js
+    │   ├── health-tm-lambda.test.js
     │   └── package.json
     ├── new-command
         ├── README.md
         ├── cloudformation
         │    └── new-command-cfn-template.js
         ├── new-command-lambda.js
+        ├── new-command-lambda.test.js
         └── package.json
 
 ```
