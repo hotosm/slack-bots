@@ -82,3 +82,5 @@ exports.handler = async (event) => {
     await sendToSlack(responseURL, ERROR_BLOCK)
   }
 }
+
+exports.sendToSlack = sendToSlack
