@@ -1,5 +1,8 @@
 const test = require('tape')
 const sinon = require('sinon')
+const fetch = require('node-fetch')
+
+const slackUtils = require('./slack-utils')
 const lambda = require('./health-tm-lambda')
 
 const mockSNSEvent = {
@@ -15,7 +18,7 @@ const mockSNSEvent = {
         TopicArn: 'arn:aws:sns:us-east-1:xxxx:health-tm',
         Subject: 'SNS from Slack Slash Command',
         Message:
-          '{"token":"xxxx","team_id":"xxxx","team_domain":"hotosm","channel_id":"xxxx","channel_name":"xxxx","user_id":"xxxx","user_name":"xxxx","command":"%2Fhealth-tm","text":"i+am+a+text","response_url":"https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT042TUWCB%2F1268895855603%2FxqsA9bJP5JnteuIv8VWou6u8","trigger_id":"1267317526581.xxxx.dce29256095d10e5a4c261ed8f57b848"}',
+          '{"token":"xxxx","team_id":"xxxx","team_domain":"hotosm","channel_id":"xxxx","channel_name":"xxxx","user_id":"xxxx","user_name":"xxxx","command":"%2Fhealth-tm","text":"i+am+a+text","response_url":"https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT042TUWCB","trigger_id":"1267317526581.xxxx.dce29256095d10e5a4c261ed8f57b848"}',
         Timestamp: '2020-07-29T01:58:17.158Z',
         SignatureVersion: '1',
         Signature:
@@ -30,10 +33,60 @@ const mockSNSEvent = {
   ],
 }
 
-test('health-tm sends success block after successful API call', (t) => {
-  lambda.handler(mockSNSEvent, {}, (err) => {
-    t.pass('pass')
-  })
+test('health-tm sends success block after successful API call', async (t) => {
+  // spy sendToSlack
+  const sendToSlackStub = sinon
+    .stub(slackUtils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  // mock fetch return value
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub.onCall(0).returns(Promise.resolve({ status: 200 }))
+  fetchStub.onCall(1).returns(
+    Promise.resolve({
+      status: 200,
+      json: () => ({ mappersOnline: 7, totalProjects: 4000 }),
+    })
+  )
+  fetchStub.returns(Promise.resolve(null))
+
+  await lambda.handler(mockSNSEvent)
+
+  // expect
+  sinon.assert.callCount(fetchStub, 2)
+  sinon.assert.callCount(sendToSlackStub, 1)
+  t.equal(
+    lambda.slackUtils.calledWith([
+      'https://hooks.slack.com/commands/T042TUWCB',
+      {
+        response_type: 'ephemeral',
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: ':white_check_mark: *The Tasking Manager is operational*',
+            },
+          },
+          {
+            type: 'section',
+            fields: [
+              {
+                type: 'mrkdwn',
+                text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: 7`,
+              },
+              {
+                type: 'mrkdwn',
+                text: `:world_map: *Number of Projects Hosted*: 4000`,
+              },
+            ],
+          },
+        ],
+      },
+    ]),
+    true
+  )
 
   t.end()
+  sendToSlackStub.restore()
 })

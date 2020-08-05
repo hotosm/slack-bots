@@ -1,5 +1,7 @@
 const fetch = require('node-fetch')
 
+const { sendToSlack } = require('./slack-utils')
+
 const TM_API_BASE_URL = process.env.TM_API_BASE_URL
 
 const TM_STATUS_URL = TM_API_BASE_URL + 'system/heartbeat/'
@@ -46,16 +48,6 @@ const buildSuccessBlock = (mappersOnline, totalProjects) => {
   }
 }
 
-const sendToSlack = async (responseURL, message) => {
-  await fetch(responseURL, {
-    method: 'post',
-    body: JSON.stringify(message),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-}
-
 exports.handler = async (event) => {
   const snsMessage = JSON.parse(event.Records[0].Sns.Message)
   const responseURL = decodeURIComponent(snsMessage.response_url)
@@ -82,5 +74,3 @@ exports.handler = async (event) => {
     await sendToSlack(responseURL, ERROR_BLOCK)
   }
 }
-
-exports.sendToSlack = sendToSlack

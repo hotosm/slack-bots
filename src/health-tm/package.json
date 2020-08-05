@@ -4,7 +4,7 @@
   "description": "Returns the current status and other information regarding the Tasking Manager",
   "main": "health-tm-lambda.js",
   "scripts": {
-    "test": "tape health-tm-lambda.test.js | tap-dot"
+    "test": "tape health-tm-lambda.test.js | faucet"
   },
   "repository": {
     "type": "git",
@@ -16,8 +16,8 @@
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
+    "faucet": "0.0.1",
     "sinon": "^9.0.2",
-    "tap-dot": "^2.0.0",
     "tape": "^5.0.1"
   }
 }
