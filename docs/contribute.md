@@ -38,7 +38,7 @@ Apart from Slack slash commands, you may be interested in adding other features 
 
 
 ### Working with HOT tools
-If you are working with HOT tools such as the Tasking Manager and OSMCha and need a token, please contact //_________//.
+If you are working with HOT tools such as the Tasking Manager and OSMCha and need a token, please contact @ramyaragupathy and @willemarcel respectively.
 
 ### Slack Slash Commands - Event payload that your Lambda will receive 
 When working with Slack slash commands, the event object that the command lambda will receive from its SNS pair will have the following format:
