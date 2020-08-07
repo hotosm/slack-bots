@@ -88,4 +88,39 @@ test('health-tm sends success block after successful API call', async (t) => {
 
   t.end()
   sendToSlackStub.restore()
+  fetchStub.restore()
+})
+
+test('health-tm sends error message after failed API call', async (t) => {
+  // spy sendToSlack
+  const sendToSlackStub = sinon
+    .stub(lambda, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  // mock fetch return value
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub.onCall(0).returns(Promise.resolve({ status: 200 }))
+  fetchStub.onCall(1).returns(Promise.resolve({ status: 500 }))
+  fetchStub.returns(Promise.resolve(null))
+
+  await lambda.handler(mockSNSEvent)
+
+  // expect
+  sinon.assert.callCount(fetchStub, 2)
+  sinon.assert.callCount(sendToSlackStub, 1)
+  t.equal(
+    lambda.sendToSlack.calledWith(
+      'https://hooks.slack.com/commands/T042TUWCB',
+      {
+        response_type: 'ephemeral',
+        text:
+          ':heavy_exclamation_mark: The Tasking Manager cannot be reached right now. Please try again and if the error persists, post a message at <#C319P09PB>',
+      }
+    ),
+    true
+  )
+
+  t.end()
+  sendToSlackStub.restore()
+  fetchStub.restore()
 })
