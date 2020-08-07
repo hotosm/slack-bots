@@ -2,7 +2,6 @@ const test = require('tape')
 const sinon = require('sinon')
 const fetch = require('node-fetch')
 
-const slackUtils = require('./slack-utils')
 const lambda = require('./health-tm-lambda')
 
 const mockSNSEvent = {
@@ -36,7 +35,7 @@ const mockSNSEvent = {
 test('health-tm sends success block after successful API call', async (t) => {
   // spy sendToSlack
   const sendToSlackStub = sinon
-    .stub(slackUtils, 'sendToSlack')
+    .stub(lambda, 'sendToSlack')
     .returns(Promise.resolve(null))
 
   // mock fetch return value
@@ -56,7 +55,7 @@ test('health-tm sends success block after successful API call', async (t) => {
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
   t.equal(
-    lambda.slackUtils.calledWith([
+    lambda.sendToSlack.calledWith(
       'https://hooks.slack.com/commands/T042TUWCB',
       {
         response_type: 'ephemeral',
@@ -82,8 +81,8 @@ test('health-tm sends success block after successful API call', async (t) => {
             ],
           },
         ],
-      },
-    ]),
+      }
+    ),
     true
   )
 
