@@ -33,12 +33,10 @@ const mockSNSEvent = {
 }
 
 test('health-tm sends success block after successful API call', async (t) => {
-  // spy sendToSlack
   const sendToSlackStub = sinon
     .stub(lambda, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  // mock fetch return value
   const fetchStub = sinon.stub(fetch, 'Promise')
   fetchStub.onCall(0).returns(Promise.resolve({ status: 200 }))
   fetchStub.onCall(1).returns(
@@ -51,7 +49,6 @@ test('health-tm sends success block after successful API call', async (t) => {
 
   await lambda.handler(mockSNSEvent)
 
-  // expect
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
   t.equal(
@@ -92,12 +89,10 @@ test('health-tm sends success block after successful API call', async (t) => {
 })
 
 test('health-tm sends error message after failed API call', async (t) => {
-  // spy sendToSlack
   const sendToSlackStub = sinon
     .stub(lambda, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  // mock fetch return value
   const fetchStub = sinon.stub(fetch, 'Promise')
   fetchStub.onCall(0).returns(Promise.resolve({ status: 200 }))
   fetchStub.onCall(1).returns(Promise.resolve({ status: 500 }))
@@ -105,7 +100,6 @@ test('health-tm sends error message after failed API call', async (t) => {
 
   await lambda.handler(mockSNSEvent)
 
-  // expect
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
   t.equal(
@@ -126,12 +120,10 @@ test('health-tm sends error message after failed API call', async (t) => {
 })
 
 test('health-tm sends error message after failed JSON parsing', async (t) => {
-  // spy sendToSlack
   const sendToSlackStub = sinon
     .stub(lambda, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  // mock fetch return value
   const fetchStub = sinon.stub(fetch, 'Promise')
   fetchStub.onCall(0).returns(Promise.resolve({ status: 200 }))
   fetchStub.onCall(1).returns(
@@ -146,7 +138,6 @@ test('health-tm sends error message after failed JSON parsing', async (t) => {
 
   await lambda.handler(mockSNSEvent)
 
-  // expect
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
   t.equal(
