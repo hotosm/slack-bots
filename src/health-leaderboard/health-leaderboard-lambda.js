@@ -13,7 +13,7 @@ const OSM_STATS_URL = process.env.OSM_STATS_API_BASE_URL + 'status'
 const DAY_IN_MINUTES = 60 * 24
 
 function getDateFromOsmTimestamp(osmTimestamp) {
-  return new Date((osmTimestamp + OSM_EPOCH) * 60000)
+  return new Date((osmTimestamp + OSM_EPOCH) * 60000).toUTCString()
 }
 
 exports.getLeaderboardStatus = (overpassTime, leaderboardTime) => {
