@@ -33,61 +33,125 @@ const mockSNSEvent = {
 }
 
 test('getLeaderboardStatus to returns "up-to-date"', (t) => {
-  // Arrange
   const overpassTime = 4158914
   const leaderboardTime = 4158930
   const expected = 'up-to-date'
 
-  // Act
   const timestampDifference = lambda.getLeaderboardStatus(
     overpassTime,
     leaderboardTime
   )
 
-  // Assert
   t.equal(timestampDifference, expected, true)
 
   t.end()
 })
 
 test('getLeaderboardStatus to returns "less than 1 day behind"', (t) => {
-  // Arrange
   const overpassTime = 4158964
   const leaderboardTime = 4158844 // 120 minutes behind
   const expected = 'less than 1 day behind'
 
-  // Act
   const timestampDifference = lambda.getLeaderboardStatus(
     overpassTime,
     leaderboardTime
   )
 
-  // Assert
   t.equal(timestampDifference, expected)
 
   t.end()
 })
 
 test('getLeaderboardStatus to returns "7 day(s) behind"', (t) => {
-  // Arrange
   const overpassTime = 4158964
   const leaderboardTime = 4148834 // 7 days behind
   const expected = '7 day(s) behind'
 
-  // Act
   const timestampDifference = lambda.getLeaderboardStatus(
     overpassTime,
     leaderboardTime
   )
 
-  // Assert
   t.equal(timestampDifference, expected)
 
   t.end()
 })
 
+test.skip('health-leaderboard sends success block after successful API call', async (t) => {
+  const sendToSlackStub = sinon
+    .stub(lambda, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub.onCall(0).returns(
+    Promise.resolve({
+      status: 200,
+      json: () => 4158976,
+    })
+  )
+  fetchStub.onCall(1).returns(
+    Promise.resolve({
+      status: 200,
+      json: () => [
+        {
+          component: 'augmented diffs',
+          id: 4154779,
+          updated_at: '2020-08-09T09:17:39.504Z',
+        },
+        {
+          component: 'changesets',
+          id: 4054404,
+          updated_at: '2020-08-09T11:13:26.917Z',
+        },
+      ],
+    })
+  )
+  fetchStub.returns(Promise.resolve(null))
+
+  await lambda.handler(mockSNSEvent)
+  console.log(lambda.sendToSlack())
+
+  sinon.assert.callCount(fetchStub, 2)
+  sinon.assert.callCount(sendToSlackStub, 1)
+  t.equal(
+    lambda.sendToSlack.calledWith(
+      'https://hooks.slack.com/commands/T042TUWCB',
+      {
+        response_type: 'ephemeral',
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `:calendar: Missing Maps Leaderboard data is _2 day(s) behind_.`,
+            },
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `:small_orange_diamond: Feature count and user stats were last updated on *Thu Aug 06 2020 13:15:00 GMT+0000 (Coordinated Universal Time)*`,
+            },
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `:small_orange_diamond: Changeset and edit count is from *Sun Aug 09 2020 11:13:00 GMT+0000 (Coordinated Universal Time)*.`,
+            },
+          },
+        ],
+      }
+    ),
+    true
+  )
+
+  t.end()
+  sendToSlackStub.restore()
+  fetchStub.restore()
+})
+
 test('health-leaderboard sends error message after failed API call', async (t) => {
-  // Arrange
   const sendToSlackStub = sinon
     .stub(lambda, 'sendToSlack')
     .returns(Promise.resolve(null))
@@ -99,7 +163,6 @@ test('health-leaderboard sends error message after failed API call', async (t) =
 
   await lambda.handler(mockSNSEvent)
 
-  // expect
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
   t.equal(
@@ -120,7 +183,6 @@ test('health-leaderboard sends error message after failed API call', async (t) =
 })
 
 test('health-leaderboard sends error message after failed JSON parsing', async (t) => {
-  // Arrange
   const sendToSlackStub = sinon
     .stub(lambda, 'sendToSlack')
     .returns(Promise.resolve(null))
@@ -139,7 +201,6 @@ test('health-leaderboard sends error message after failed JSON parsing', async (
 
   await lambda.handler(mockSNSEvent)
 
-  // expect
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
   t.equal(
