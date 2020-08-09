@@ -124,3 +124,44 @@ test('health-tm sends error message after failed API call', async (t) => {
   sendToSlackStub.restore()
   fetchStub.restore()
 })
+
+test('health-tm sends error message after failed JSON parsing', async (t) => {
+  // spy sendToSlack
+  const sendToSlackStub = sinon
+    .stub(lambda, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  // mock fetch return value
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub.onCall(0).returns(Promise.resolve({ status: 200 }))
+  fetchStub.onCall(1).returns(
+    Promise.resolve({
+      status: 200,
+      json: () => {
+        throw new Error()
+      },
+    })
+  )
+  fetchStub.returns(Promise.resolve(null))
+
+  await lambda.handler(mockSNSEvent)
+
+  // expect
+  sinon.assert.callCount(fetchStub, 2)
+  sinon.assert.callCount(sendToSlackStub, 1)
+  t.equal(
+    lambda.sendToSlack.calledWith(
+      'https://hooks.slack.com/commands/T042TUWCB',
+      {
+        response_type: 'ephemeral',
+        text:
+          ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+      }
+    ),
+    true
+  )
+
+  t.end()
+  sendToSlackStub.restore()
+  fetchStub.restore()
+})
