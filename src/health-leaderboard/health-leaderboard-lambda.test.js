@@ -10,7 +10,7 @@ const mockSNSEvent = {
       EventSource: 'aws:sns',
       EventVersion: '1.0',
       EventSubscriptionArn:
-        'arn:aws:sns:us-east-1:xxxx:health-tm:a7298a2b-faae-4621-b5ca-388762807cd8',
+        'arn:aws:sns:us-east-1:xxxx:health-leaderboard:a7298a2b-faae-4621-b5ca-388762807cd8',
       Sns: {
         Type: 'Notification',
         MessageId: '7de225df-xxxx-5336-a4cc-72458e7f0b54',
@@ -25,7 +25,7 @@ const mockSNSEvent = {
         SigningCertUrl:
           'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-xxxx.pem',
         UnsubscribeUrl:
-          'https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:xxxx:health-tm:xxxx-faae-4621-b5ca-xxxx',
+          'https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:xxxx:health-leaderboard:xxxx-faae-4621-b5ca-xxxx',
         MessageAttributes: {},
       },
     },
