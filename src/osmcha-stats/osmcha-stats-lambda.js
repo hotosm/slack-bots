@@ -47,7 +47,7 @@ const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
   )}`
 }
 
-const fetchChagesetData = async (
+const fetchChangesetData = async (
   osmChaSuspectURL,
   osmChaStatsURL,
   OSMCHA_REQUEST_HEADER
@@ -78,13 +78,13 @@ const fetchChagesetData = async (
   )
 }
 
-const fetchChagesetDataWithRetry = async (
+const fetchChangesetDataWithRetry = async (
   osmChaSuspectURL,
   osmChaStatsURL,
   OSMCHA_REQUEST_HEADER
 ) => {
   try {
-    const { changesets, count, reasons } = await fetchChagesetData(
+    const { changesets, count, reasons } = await fetchChangesetData(
       osmChaSuspectURL,
       osmChaStatsURL,
       OSMCHA_REQUEST_HEADER
@@ -97,7 +97,7 @@ const fetchChagesetDataWithRetry = async (
     const osmChaNewSuspectURL = osmChaSuspectURL + `&date__gte=${dateFilter}`
     const osmChaNewStatsURL = osmChaStatsURL + `&date__gte=${dateFilter}`
 
-    const { changesets, count, reasons } = await fetchChagesetData(
+    const { changesets, count, reasons } = await fetchChangesetData(
       osmChaNewSuspectURL,
       osmChaNewStatsURL,
       OSMCHA_REQUEST_HEADER
@@ -123,7 +123,7 @@ const commentChangesets = async (
       changesets,
       reasons,
       complete,
-    } = await fetchChagesetDataWithRetry(
+    } = await fetchChangesetDataWithRetry(
       osmChaSuspectURL,
       osmChaStatsURL,
       OSMCHA_REQUEST_HEADER
@@ -197,7 +197,7 @@ const projectChangesets = async (
 
     const filterDescriptor = `<${osmChaURL}|project: #${projectId} - ${projectInfo.name}>`
 
-    const { count, changesets, reasons } = await fetchChagesetData(
+    const { count, changesets, reasons } = await fetchChangesetData(
       osmChaSuspectURL,
       osmChaStatsURL,
       OSMCHA_REQUEST_HEADER
