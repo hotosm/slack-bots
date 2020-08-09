@@ -62,3 +62,6 @@ typings/
 
 # Mac Config file
 *.DS_Store*
+
+# VSCode setting
+.vscode
