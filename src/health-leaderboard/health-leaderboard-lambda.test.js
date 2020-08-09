@@ -77,7 +77,7 @@ test('getLeaderboardStatus to returns "7 day(s) behind"', (t) => {
   t.end()
 })
 
-test.skip('health-leaderboard sends success block after successful API call', async (t) => {
+test('health-leaderboard sends success block after successful API call', async (t) => {
   const sendToSlackStub = sinon
     .stub(lambda, 'sendToSlack')
     .returns(Promise.resolve(null))
@@ -86,7 +86,7 @@ test.skip('health-leaderboard sends success block after successful API call', as
   fetchStub.onCall(0).returns(
     Promise.resolve({
       status: 200,
-      json: () => 4158976,
+      json: () => 4159045,
     })
   )
   fetchStub.onCall(1).returns(
@@ -94,14 +94,19 @@ test.skip('health-leaderboard sends success block after successful API call', as
       status: 200,
       json: () => [
         {
-          component: 'augmented diffs',
-          id: 4154779,
-          updated_at: '2020-08-09T09:17:39.504Z',
+          component: 'changesets',
+          id: 4054464,
+          updated_at: '2020-08-09T12:24:15.235Z',
         },
         {
-          component: 'changesets',
-          id: 4054404,
-          updated_at: '2020-08-09T11:13:26.917Z',
+          component: 'augmented diffs',
+          id: 4154794,
+          updated_at: '2020-08-09T12:24:16.501Z',
+        },
+        {
+          component: 'badges',
+          id: null,
+          updated_at: '2020-08-09T11:49:53.928Z',
         },
       ],
     })
@@ -109,7 +114,6 @@ test.skip('health-leaderboard sends success block after successful API call', as
   fetchStub.returns(Promise.resolve(null))
 
   await lambda.handler(mockSNSEvent)
-  console.log(lambda.sendToSlack())
 
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
@@ -130,14 +134,14 @@ test.skip('health-leaderboard sends success block after successful API call', as
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `:small_orange_diamond: Feature count and user stats were last updated on *Thu Aug 06 2020 13:15:00 GMT+0000 (Coordinated Universal Time)*`,
+              text: `:small_orange_diamond: Feature count and user stats were last updated on *Thu, 06 Aug 2020 13:30:00 GMT*`,
             },
           },
           {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `:small_orange_diamond: Changeset and edit count is from *Sun Aug 09 2020 11:13:00 GMT+0000 (Coordinated Universal Time)*.`,
+              text: `:small_orange_diamond: Changeset and edit count is from *Sun, 09 Aug 2020 12:21:00 GMT*.`,
             },
           },
         ],
@@ -158,7 +162,7 @@ test('health-leaderboard sends error message after failed API call', async (t) =
 
   const fetchStub = sinon.stub(fetch, 'Promise')
   fetchStub.onCall(0).returns(Promise.resolve({ status: 200 }))
-  fetchStub.onCall(1).returns(Promise.resolve({ status: 200 }))
+  fetchStub.onCall(1).returns(Promise.resolve({ status: 500 }))
   fetchStub.returns(Promise.resolve(null))
 
   await lambda.handler(mockSNSEvent)
