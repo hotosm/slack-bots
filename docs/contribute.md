@@ -30,6 +30,7 @@ MapBox has created [Cloudfriend](https://github.com/mapbox/cloudfriend) and [cfn
 ### Creating other Slackbot features
 Apart from Slack slash commands, you may be interested in adding other features and integrations to the Slackbot, please submit a GitHub issue for your idea specifying:
   + What problem your idea is trying to solve
+  + How does the solution fit into the current architecture
   + Integrations needed with other tools, APIs etc.
   + AWS resources needed, if any
 
