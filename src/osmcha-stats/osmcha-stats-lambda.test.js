@@ -18,7 +18,7 @@ const buildMockSNSEvent = (parameter) => {
           MessageId: '7de225df-xxxx-5336-a4cc-72458e7f0b54',
           TopicArn: 'arn:aws:sns:us-east-1:xxxx:osmcha-stats',
           Subject: 'SNS from Slack Slash Command',
-          Message: `{"token":"xxxx","team_id":"xxxx","team_domain":"hotosm","channel_id":"xxxx","channel_name":"xxxx","user_id":"xxxx","user_name":"xxxx","command":"%2Fosmcha-stats","text":${parameter},"response_url":"https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT042TUWCB","trigger_id":"1267317526581.xxxx.dce29256095d10e5a4c261ed8f57b848"}`,
+          Message: `{"token":"xxxx","team_id":"xxxx","team_domain":"hotosm","channel_id":"xxxx","channel_name":"xxxx","user_id":"xxxx","user_name":"xxxx","command":"%2Fosmcha-stats","text":"${parameter}","response_url":"https%3A%2F%2Fhooks.slack.com%2Fcommands%2FT042TUWCB","trigger_id":"1267317526581.xxxx.dce29256095d10e5a4c261ed8f57b848"}`,
           Timestamp: '2020-07-29T01:58:17.158Z',
           SignatureVersion: '1',
           Signature:
@@ -33,6 +33,92 @@ const buildMockSNSEvent = (parameter) => {
     ],
   }
 }
+
+test.skip('fetchChangesetData returns { changesets, count, reasons } object after successful API calls', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub
+    .onCall(0)
+    .returns(Promise.resolve({ status: 200, json: () => ({ count: 16 }) }))
+  fetchStub.onCall(1).returns(
+    Promise.resolve({
+      status: 200,
+      json: () => ({
+        changesets: 16,
+        reasons: [
+          {
+            harmful_changesets: 0,
+            changesets: 16,
+            checked_changesets: 0,
+            name: 'Review requested',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 8,
+            checked_changesets: 0,
+            name: 'possible import',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 2,
+            checked_changesets: 0,
+            name: 'mass modification',
+          },
+        ],
+      }),
+    })
+  )
+  fetchStub.returns(Promise.resolve(null))
+
+  const fetchChangesetDataResult = await lambda.fetchChangesetData(
+    'osmChaSuspectURL',
+    'osmChaStatsURL',
+    'OSMCHA_REQUEST_HEADER'
+  )
+
+  sinon.assert.callCount(fetchStub, 2)
+  t.equal(fetchChangesetDataResult, {
+    changesets: 16,
+    count: 16,
+    reasons: [
+      {
+        harmful_changesets: 0,
+        changesets: 16,
+        checked_changesets: 0,
+        name: 'Review requested',
+      },
+      {
+        harmful_changesets: 0,
+        changesets: 8,
+        checked_changesets: 0,
+        name: 'possible import',
+      },
+      {
+        harmful_changesets: 0,
+        changesets: 2,
+        checked_changesets: 0,
+        name: 'mass modification',
+      },
+    ],
+  })
+})
+
+test.skip('fetchChangesetData throws error if dataset from OSMCha suspect endpoint is too big', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub.onCall(0).returns(Promise.resolve({ status: 500 }))
+  fetchStub
+    .onCall(1)
+    .returns(Promise.resolve({ status: 200, json: () => ({ count }) }))
+  fetchStub.returns(Promise.resolve(null))
+})
+
+test.skip('fetchChangesetData throws error either API call failed', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub
+    .onCall(0)
+    .returns(Promise.resolve({ status: 200, json: () => ({ count }) }))
+  fetchStub.onCall(1).returns(Promise.resolve({ status: 500 }))
+  fetchStub.returns(Promise.resolve(null))
+})
 
 test('osmcha-stats sends error message if no parameter is inputted', async (t) => {
   const sendToSlackStub = sinon
