@@ -4,7 +4,7 @@
   "description": "Returns changeset stats depending on user-input project ID or hashtags",
   "main": "osmcha-stats-lambda.js",
   "scripts": {
-    "test": "tape osmcha-stats-lambda.test.js | faucet"
+    "test": "tape osmcha-stats-lambda.test.js | tap-spec"
   },
   "repository": {
     "type": "git",
@@ -20,8 +20,8 @@
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
-    "faucet": "0.0.1",
     "sinon": "^9.0.2",
+    "tap-spec": "^5.0.0",
     "tape": "^5.0.1"
   }
 }
