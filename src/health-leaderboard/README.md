@@ -2,7 +2,7 @@
 Checks the current augmented diff that the Missing Maps Leaderboard is processing and compares this to the latest [Overpass API augmented diff](https://wiki.openstreetmap.org/wiki/Overpass_API/Augmented_Diffs) to allow users to know if the leaderboard is up-to-date.
 
 ## How to use
-Write `/health-leaderboard` in the message field of any Slack channel or direct message. The result will be showed only to the user who called the command.
+Write `/health-leaderboard` in the message field of any Slack channel or direct message. The result will be shown only to the user who called the command.
 
 
 ## Dependencies
