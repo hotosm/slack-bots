@@ -105,7 +105,43 @@ test('fetchChangesetData returns { changesets, count, reasons } object after suc
   fetchStub.restore()
 })
 
-test('fetchChangesetData throws error if dataset from OSMCha suspect endpoint is too big', async (t) => {})
+test('fetchChangesetData throws error if dataset from OSMCha suspect endpoint is too big', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise')
+  fetchStub.onCall(0).returns(Promise.resolve({ status: 500 }))
+  fetchStub.onCall(1).returns(
+    Promise.resolve({
+      status: 200,
+      json: () => ({
+        changesets: 2,
+        reasons: [
+          {
+            harmful_changesets: 0,
+            changesets: 2,
+            checked_changesets: 0,
+            name: 'mass modification',
+          },
+        ],
+      }),
+    })
+  )
+  fetchStub.returns(Promise.resolve(null))
+
+  try {
+    await lambda.fetchChangesetData(
+      'osmChaSuspectURL',
+      'osmChaStatsURL',
+      'OSMCHA_REQUEST_HEADER'
+    )
+    t.fail('Should not get here')
+  } catch (err) {
+    t.ok(err)
+    t.equal(err.message, 'Dataset too big')
+  }
+
+  sinon.assert.callCount(fetchStub, 2)
+  t.end()
+  fetchStub.restore()
+})
 
 test.skip('fetchChangesetData throws error if either API call failed', async (t) => {
   const fetchStub = sinon.stub(fetch, 'Promise')
