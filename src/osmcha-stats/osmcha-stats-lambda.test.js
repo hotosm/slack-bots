@@ -143,7 +143,7 @@ test('fetchChangesetData throws error if dataset from OSMCha suspect endpoint is
   fetchStub.restore()
 })
 
-test.skip('fetchChangesetData throws error if either API call failed', async (t) => {
+test('fetchChangesetData throws error if either API call failed', async (t) => {
   const fetchStub = sinon.stub(fetch, 'Promise')
   fetchStub
     .onCall(0)
@@ -152,18 +152,22 @@ test.skip('fetchChangesetData throws error if either API call failed', async (t)
   fetchStub.returns(Promise.resolve(null))
 
   fetchStub.returns(Promise.resolve(null))
-  const fetchChangesetDataResult = await lambda.fetchChangesetData(
-    'osmChaSuspectURL',
-    'osmChaStatsURL',
-    'OSMCHA_REQUEST_HEADER'
-  )
+  try {
+    await lambda.fetchChangesetData(
+      'osmChaSuspectURL',
+      'osmChaStatsURL',
+      'OSMCHA_REQUEST_HEADER'
+    )
+    t.fail('Should not get here')
+  } catch (err) {
+    t.ok(err)
+    t.equal(
+      err.message,
+      'OSMCha API call failed: osmChaSuspectURL: 200, osmChaStatsURL: 500'
+    )
+  }
 
   sinon.assert.callCount(fetchStub, 2)
-  t.equal(
-    fetchChangesetDataResult,
-    'Error: OSMCha API call failed: osmChaSuspectURL: 200, osmChaStatsURL: 500'
-  ) // fix
-
   t.end()
   fetchStub.restore()
 })
