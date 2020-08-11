@@ -172,6 +172,42 @@ test('fetchChangesetData throws error if either API call failed', async (t) => {
   fetchStub.restore()
 })
 
+test('fetchChangesetDataWithRetry retries with one month filter if first try failed', async (t) => {
+  const dateFilter = new Date(Date.now() - 2592000000)
+    .toISOString()
+    .substring(0, 10)
+
+  const fetchChangesetDataStub = sinon.stub(lambda, 'fetchChangesetData')
+  fetchChangesetDataStub.onCall(0).rejects(new Error('Expected error'))
+  fetchChangesetDataStub.onCall(1).returns(Promise.resolve(null))
+
+  try {
+    await lambda.fetchChangesetDataWithRetry(
+      'osmChaSuspectURL',
+      'osmChaStatsURL',
+      'OSMCHA_REQUEST_HEADER'
+    )
+  } catch (err) {
+    t.ok(err)
+  }
+
+  sinon.assert.callCount(fetchChangesetDataStub, 2)
+  sinon.assert.calledWith(
+    fetchChangesetDataStub.firstCall,
+    'osmChaSuspectURL',
+    'osmChaStatsURL',
+    'OSMCHA_REQUEST_HEADER'
+  )
+  sinon.assert.calledWith(
+    fetchChangesetDataStub.secondCall,
+    `osmChaSuspectURL&date__gte=${dateFilter}`,
+    `osmChaStatsURL&date__gte=${dateFilter}`,
+    `OSMCHA_REQUEST_HEADER`
+  )
+  t.end()
+  fetchChangesetDataStub.restore()
+})
+
 test('osmcha-stats sends error message if no parameter is inputted', async (t) => {
   const sendToSlackStub = sinon
     .stub(utils, 'sendToSlack')
