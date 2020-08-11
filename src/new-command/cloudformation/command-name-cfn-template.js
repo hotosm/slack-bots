@@ -14,10 +14,10 @@ const Parameters = {
 
 const Resources = {
   CommandNameSNS: {
-    //change name
+    //change logical name of SNS topic, this is used to reference the SNS topic in other CloudFormation resources
     Type: 'AWS::SNS::Topic',
     Properties: {
-      TopicName: 'command-name', //change to name of slash command as it is used in Slack
+      TopicName: 'command-name', //change to name of slash command as it is used in Slack, it is crucial that it is the exactly the same for the router to work properly
       Subscription: [
         {
           Endpoint: cf.getAtt('CommandNameLambda', 'Arn'), //change to logical name of Lambda (line 45)
@@ -36,7 +36,7 @@ const Resources = {
       Action: 'lambda:InvokeFunction',
       FunctionName: cf.ref('CommandNameLambda'), // change to logical name of Lambda (line 45)
       Principal: 'sns.amazonaws.com',
-      SourceArn: cf.ref('CommandNameSNS'), // change to logical name of SNS (line 16)
+      SourceArn: cf.ref('CommandNameSNS'), // change to logical name of SNS topic (line 16)
     },
   },
 }
