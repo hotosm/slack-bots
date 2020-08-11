@@ -1,5 +1,7 @@
 # Existing commands and features
 ## Slash Commands
+* [`/command-help`](https://github.com/hotosm/slack-bots/tree/master/src/command-help) - Returns a list, including a short description, of all Slack slash commands that users can use. 
+
 * [`/health-tm`](https://github.com/hotosm/slack-bots/tree/master/src/health-tm) - Return the status of the Tasking Manager and other stats
 
 * [`/health-leaderboard`](https://github.com/hotosm/slack-bots/tree/master/src/health-leaderboard) - Returns the status of the Missing Maps Leaderboard

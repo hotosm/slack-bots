@@ -30,7 +30,7 @@
 10. Check [Dev Setup](https://github.com/hotosm/slack-bots/blob/master/docs/dev-setup.md) and try out the command in Slack to make sure it is working as intended.
 11. Create unit tests. Test all event paths that your command may take, including all error messages.
 12. Create README.md file, see `./src/new-command/README.md` for guide on what you need to include.
-13. Edit `./src/command-help/command-help-lambda.js` and include your new command including a short description.
+13. Add your new command to `./src/command-help/command-help-lambda.js` and `./docs/slash-commands.md` and include a short description.
 14. Submit pull request.
 
 
