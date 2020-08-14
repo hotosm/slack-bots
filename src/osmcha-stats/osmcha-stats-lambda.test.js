@@ -382,6 +382,7 @@ test('osmcha-stats return success message if user input valid project ID', async
 
   await lambda.handler(buildMockSNSEvent(8989))
 
+  sinon.assert.callCount(awsSSMStub, 1)
   sinon.assert.callCount(fetchStub, 1)
   sinon.assert.callCount(fetchChangesetDataStub, 1)
   sinon.assert.callCount(sendToSlackStub, 1)
@@ -425,7 +426,40 @@ test('osmcha-stats return success message if user input valid project ID', async
   sendToSlackStub.restore()
 })
 
-test.skip('osmcha-stats return error message if user input invalid project ID', async (t) => {})
+test('osmcha-stats return error message if user input invalid project ID', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const fetchStub = sinon.stub(fetch, 'Promise').returns({ status: 404 })
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent(8989))
+
+  sinon.assert.callCount(awsSSMStub, 1)
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      text:
+        `:x: Project cannot be found or accessed` +
+        '\nUse the `/osmcha-stats help` command for help on using this command.',
+    }),
+    true
+  )
+
+  t.end()
+  awsSSMStub.restore()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('osmcha-stats return success message if user input valid comment hashtag(s) and dataset is not too big', async (t) => {})
 
