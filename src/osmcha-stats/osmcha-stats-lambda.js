@@ -1,15 +1,9 @@
 const AWS = require('aws-sdk')
 const fetch = require('node-fetch')
 
-const {
-  createBlock,
-  sendToSlack,
-  ERROR_MESSAGE,
-  HELP_BLOCK,
-} = require('./slack-utils')
+const utils = require('./slack-utils')
 
 const lastMonthUnixTime = new Date(Date.now() - 2592000000).toISOString()
-const OSMCHA_BASE_URL = process.env.OSMCHA_BASE_URL
 const OSMCHA_API_BASE_URL = process.env.OSMCHA_API_BASE_URL
 const TM_API_BASE_URL = process.env.TM_API_BASE_URL
 
@@ -42,12 +36,12 @@ const createOsmChaUrl = ({ aoiBBOX, changesetComment, dateCreated }) => {
     ...(changesetComment ? { comment: getFilterArray(changesetComment) } : {}),
   }
 
-  return `${OSMCHA_BASE_URL}?filters=${encodeURIComponent(
+  return `${process.env.OSMCHA_BASE_URL}?filters=${encodeURIComponent(
     JSON.stringify(filters)
   )}`
 }
 
-const fetchChangesetData = async (
+exports.fetchChangesetData = async (
   osmChaSuspectURL,
   osmChaStatsURL,
   OSMCHA_REQUEST_HEADER
@@ -60,31 +54,30 @@ const fetchChangesetData = async (
   const { status: suspectStatus } = osmChaSuspectRes
   const { status: statsStatus } = osmChaStatsRes
 
-  const [{ count }, { changesets, reasons }] = await Promise.all([
-    osmChaSuspectRes.json(),
-    osmChaStatsRes.json(),
-  ])
-
-  if (suspectStatus === 200 && statsStatus == 200) {
-    return { changesets, count, reasons }
-  }
-
   if (suspectStatus >= 500) {
     throw new Error('Dataset too big')
   }
 
-  throw new Error(
-    `OSMCha API call failed: osmChaSuspectURL: ${suspectStatus}, osmChaStatsURL: ${statsStatus}`
-  )
+  if (suspectStatus !== 200 || statsStatus !== 200) {
+    throw new Error(
+      `OSMCha API call failed: osmChaSuspectURL: ${suspectStatus}, osmChaStatsURL: ${statsStatus}`
+    )
+  }
+
+  const [{ count }, { changesets, reasons }] = await Promise.all([
+    osmChaSuspectRes.json(),
+    osmChaStatsRes.json(),
+  ])
+  return { changesets, count, reasons }
 }
 
-const fetchChangesetDataWithRetry = async (
+exports.fetchChangesetDataWithRetry = async (
   osmChaSuspectURL,
   osmChaStatsURL,
   OSMCHA_REQUEST_HEADER
 ) => {
   try {
-    const { changesets, count, reasons } = await fetchChangesetData(
+    const { changesets, count, reasons } = await exports.fetchChangesetData(
       osmChaSuspectURL,
       osmChaStatsURL,
       OSMCHA_REQUEST_HEADER
@@ -97,7 +90,7 @@ const fetchChangesetDataWithRetry = async (
     const osmChaNewSuspectURL = osmChaSuspectURL + `&date__gte=${dateFilter}`
     const osmChaNewStatsURL = osmChaStatsURL + `&date__gte=${dateFilter}`
 
-    const { changesets, count, reasons } = await fetchChangesetData(
+    const { changesets, count, reasons } = await exports.fetchChangesetData(
       osmChaNewSuspectURL,
       osmChaNewStatsURL,
       OSMCHA_REQUEST_HEADER
@@ -123,7 +116,7 @@ const commentChangesets = async (
       changesets,
       reasons,
       complete,
-    } = await fetchChangesetDataWithRetry(
+    } = await exports.fetchChangesetDataWithRetry(
       osmChaSuspectURL,
       osmChaStatsURL,
       OSMCHA_REQUEST_HEADER
@@ -131,16 +124,16 @@ const commentChangesets = async (
 
     const filterDescriptor = complete
       ? `<${osmChaURL}|comment(s): ${changesetComment}>`
-      : `<${osmChaURL}|comment(s): ${changesetComment}>\nDue to the large dataset, we are only showing the data from last month.\nAdd more hashtags to filter the results further or click on the hyperlink to see all changesets in OSMCha.`
+      : `<${osmChaURL}|comment(s): ${changesetComment}>\nDue to the large dataset, we are only showing the data from last month.\nAdd more hashtags to filter the results further or click on the hyperlink to see all changesets in OSMCha`
 
-    const commentBlock = createBlock(
+    const commentBlock = utils.createBlock(
       filterDescriptor,
       changesets,
       reasons,
       count
     )
 
-    await sendToSlack(responseURL, commentBlock)
+    await utils.sendToSlack(responseURL, commentBlock)
   } catch (error) {
     console.error(error)
 
@@ -151,11 +144,11 @@ const commentChangesets = async (
           ':x: The dataset is too big to show. Please put in additional hashtags to filter the results further. Use the `/osmcha-stats help` command for help on using this command.\n' +
           `<${osmChaURL}|You can see the changesets for ${changesetComment} at OSMCha by clicking here>.`,
       }
-      await sendToSlack(responseURL, timeOutError)
+      await utils.sendToSlack(responseURL, timeOutError)
       return
     }
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
 
@@ -197,20 +190,20 @@ const projectChangesets = async (
 
     const filterDescriptor = `<${osmChaURL}|project: #${projectId} - ${projectInfo.name}>`
 
-    const { count, changesets, reasons } = await fetchChangesetData(
+    const { count, changesets, reasons } = await exports.fetchChangesetData(
       osmChaSuspectURL,
       osmChaStatsURL,
       OSMCHA_REQUEST_HEADER
     )
 
-    const projectBlock = createBlock(
+    const projectBlock = utils.createBlock(
       filterDescriptor,
       changesets,
       reasons,
       count
     )
 
-    await sendToSlack(responseURL, projectBlock)
+    await utils.sendToSlack(responseURL, projectBlock)
     return
   } catch (error) {
     console.error(error)
@@ -222,11 +215,11 @@ const projectChangesets = async (
           `:x: ${error.message}` +
           '\nUse the `/osmcha-stats help` command for help on using this command.',
       }
-      await sendToSlack(responseURL, projectUnavailable)
+      await utils.sendToSlack(responseURL, projectUnavailable)
       return
     }
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
 
@@ -250,12 +243,12 @@ exports.handler = async (event) => {
           },
         ],
       }
-      await sendToSlack(responseURL, missingParameterBlock)
+      await utils.sendToSlack(responseURL, missingParameterBlock)
       return
     }
 
     if (commandParameters === 'help') {
-      await sendToSlack(responseURL, HELP_BLOCK)
+      await utils.sendToSlack(responseURL, utils.HELP_BLOCK)
       return
     }
 
@@ -287,6 +280,6 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(error)
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
