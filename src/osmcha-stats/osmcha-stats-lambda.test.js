@@ -800,4 +800,30 @@ test('osmcha-stats return error message if user input comment hashtag(s) and dat
   sendToSlackStub.restore()
 })
 
-test.skip('osmcha-stats return error message for other exceptions thrown in lambda', async (t) => {})
+test('osmcha-stats return generic error message for other exceptions thrown in lambda', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(Promise.reject())
+  })
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent('#covid'))
+
+  sinon.assert.callCount(awsSSMStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      text:
+        ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>.', // move to Parameter Store so it can be used for all generic errors?
+    }),
+    true
+  )
+
+  t.end()
+  awsSSMStub.restore()
+  sendToSlackStub.restore()
+})
