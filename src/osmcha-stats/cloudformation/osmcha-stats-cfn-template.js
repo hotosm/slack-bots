@@ -55,7 +55,7 @@ const lambda = new cf.shortcuts.Lambda({
     },
   },
   Runtime: 'nodejs12.x',
-  Timeout: '60',
+  Timeout: '300',
   Statement: [
     {
       Effect: 'Allow',
