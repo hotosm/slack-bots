@@ -179,7 +179,7 @@ test('fetchChangesetDataWithRetry retries with one month filter if first try fai
     .substring(0, 10)
 
   const fetchChangesetDataStub = sinon.stub(lambda, 'fetchChangesetData')
-  fetchChangesetDataStub.onCall(0).rejects(new Error('Expected error'))
+  fetchChangesetDataStub.onCall(0).throws(new Error('Expected error'))
   fetchChangesetDataStub.onCall(1).returns(Promise.resolve(null))
 
   try {
@@ -494,7 +494,7 @@ test('osmcha-stats return generic error message if an exception was thrown - que
 
   const fetchChangesetDataStub = sinon
     .stub(lambda, 'fetchChangesetData')
-    .rejects(new Error('Expected error'))
+    .throws(new Error('Expected error'))
 
   const sendToSlackStub = sinon
     .stub(utils, 'sendToSlack')
@@ -760,6 +760,44 @@ test('osmcha-stats return correct message with if user input valid comment hasht
   sendToSlackStub.restore()
 })
 
-test.skip('osmcha-stats return error message if user input comment hashtag(s) and dataset is too big even with one month filter', async (t) => {})
+test('osmcha-stats return error message if user input comment hashtag(s) and dataset is too big even with one month filter', async (t) => {
+  process.env.OSMCHA_BASE_URL = 'https://osmcha.org/'
+
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const fetchChangesetDataWithRetryStub = sinon
+    .stub(lambda, 'fetchChangesetDataWithRetry')
+    .throws(new Error('Dataset too big'))
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent('#covid'))
+
+  sinon.assert.callCount(awsSSMStub, 1)
+  sinon.assert.callCount(fetchChangesetDataWithRetryStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      text:
+        ':x: The dataset is too big to show. Please put in additional hashtags to filter the results further. Use the `/osmcha-stats help` command for help on using this command.\n' +
+        `<https://osmcha.org/?filters=%7B%22date__gte%22%3A%5B%7B%22label%22%3A%22%22%2C%22value%22%3A%22%22%7D%5D%2C%22comment%22%3A%5B%7B%22label%22%3A%22%23covid%22%2C%22value%22%3A%22%23covid%22%7D%5D%7D|You can see the changesets for #covid at OSMCha by clicking here>.`,
+    }),
+    true
+  )
+
+  t.end()
+  process.env.OSMCHA_BASE_URL = undefined
+  awsSSMStub.restore()
+  fetchChangesetDataWithRetryStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('osmcha-stats return error message for other exceptions thrown in lambda', async (t) => {})
