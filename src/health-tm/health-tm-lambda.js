@@ -46,7 +46,7 @@ const buildSuccessBlock = (mappersOnline, totalProjects) => {
   }
 }
 
-const sendToSlack = async (responseURL, message) => {
+exports.sendToSlack = async (responseURL, message) => {
   await fetch(responseURL, {
     method: 'post',
     body: JSON.stringify(message),
@@ -67,7 +67,7 @@ exports.handler = async (event) => {
     ])
 
     if (tmStatusRes.status !== 200 || tmStatisticsRes.status !== 200) {
-      await sendToSlack(responseURL, TM_ERROR_BLOCK)
+      await exports.sendToSlack(responseURL, TM_ERROR_BLOCK)
       return
     }
 
@@ -75,10 +75,10 @@ exports.handler = async (event) => {
 
     const slackMessage = buildSuccessBlock(mappersOnline, totalProjects)
 
-    await sendToSlack(responseURL, slackMessage)
+    await exports.sendToSlack(responseURL, slackMessage)
   } catch (error) {
     console.error(error)
 
-    await sendToSlack(responseURL, ERROR_BLOCK)
+    await exports.sendToSlack(responseURL, ERROR_BLOCK)
   }
 }
