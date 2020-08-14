@@ -1,6 +1,6 @@
 const test = require('tape')
 const sinon = require('sinon')
-var AWS = require('@mapbox/mock-aws-sdk-js')
+const AWS = require('@mapbox/mock-aws-sdk-js')
 const fetch = require('node-fetch')
 
 const lambda = require('./osmcha-stats-lambda')
