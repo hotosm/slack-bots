@@ -1,5 +1,6 @@
 const test = require('tape')
 const sinon = require('sinon')
+var AWS = require('@mapbox/mock-aws-sdk-js')
 const fetch = require('node-fetch')
 
 const lambda = require('./osmcha-stats-lambda')
@@ -305,19 +306,14 @@ test('osmcha-stats return help message if user input "help" as parameter', async
   sendToSlackStub.restore()
 })
 
-test.skip('osmcha-stats return success message if user input valid project ID', async (t) => {
-  const sendToSlackStub = sinon
-    .stub(utils, 'sendToSlack')
-    .returns(Promise.resolve(null))
+test('osmcha-stats return success message if user input valid project ID', async (t) => {
+  process.env.OSMCHA_BASE_URL = 'https://osmcha.org/'
 
-  const buildOsmchaRequestHeaderStub = sinon
-    .stub(lambda, 'buildOsmchaRequestHeader')
-    .returns({
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'faketokenfortesting',
-      },
-    })
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
 
   const fetchStub = sinon.stub(fetch, 'Promise').returns(
     Promise.resolve({
@@ -351,18 +347,82 @@ test.skip('osmcha-stats return success message if user input valid project ID', 
     })
   )
 
-  const fetchChangesetData = sinon
+  const fetchChangesetDataStub = sinon
     .stub(lambda, 'fetchChangesetData')
-    .returns(Promise.resolve())
+    .returns(
+      Promise.resolve({
+        changesets: 16,
+        count: 16,
+        reasons: [
+          {
+            harmful_changesets: 0,
+            changesets: 16,
+            checked_changesets: 0,
+            name: 'Review requested',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 8,
+            checked_changesets: 0,
+            name: 'possible import',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 2,
+            checked_changesets: 0,
+            name: 'mass modification',
+          },
+        ],
+      })
+    )
 
-  // test fetchChangesetData separately and stub here
-  // test fetchChangesetDataRetry separately and focus on retry
-  // ~stub fetchChangesetData during test
-  // ~stub this function everywhere else
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent(8989))
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(fetchChangesetDataStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:page_with_curl: There are *16 changesets* under <https://osmcha.org/?filters=%7B%22in_bbox%22%3A%5B%7B%22label%22%3A%22-77.952362061%2C17.020414352%2C-77.566993713%2C18.2509403230001%22%2C%22value%22%3A%22-77.952362061%2C17.020414352%2C-77.566993713%2C18.2509403230001%22%7D%5D%2C%22area_lt%22%3A%5B%7B%22label%22%3A2%2C%22value%22%3A2%7D%5D%2C%22date__gte%22%3A%5B%7B%22label%22%3A%222020-06-26%22%2C%22value%22%3A%222020-06-26%22%7D%5D%2C%22comment%22%3A%5B%7B%22label%22%3A%22%23hotosm-project-8989%20%20%20%23covid19%20%23COVJam%22%2C%22value%22%3A%22%23hotosm-project-8989%20%20%20%23covid19%20%23COVJam%22%7D%5D%7D|project: #8989 - COVID-19 - Saint Elizabeth, Jamaica>.`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:warning: *16 or 100% of changesets* have been flagged as suspicious.\n:small_red_triangle: Here is the breakdown of flags: :small_red_triangle_down:`,
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: '*Review requested*: 16' },
+            { type: 'mrkdwn', text: '*possible import*: 8' },
+            { type: 'mrkdwn', text: '*mass modification*: 2' },
+          ],
+        },
+      ],
+    }),
+    true
+  )
 
   t.end()
+  process.env.OSMCHA_BASE_URL = undefined
+  awsSSMStub.restore()
+  fetchStub.restore()
+  fetchChangesetDataStub.restore()
   sendToSlackStub.restore()
-  buildOsmchaRequestHeaderStub.restore()
 })
 
 test.skip('osmcha-stats return error message if user input invalid project ID', async (t) => {})
