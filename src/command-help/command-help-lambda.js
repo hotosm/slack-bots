@@ -8,7 +8,7 @@ const HELP_BLOCK = {
       text: {
         type: 'mrkdwn',
         text:
-          'We created a number of Slack slash commands to make getting information easier for HOT members.\nSimply write any of the following slash commands in the message field of any Slack channel or direct message:',
+          'We created a number of Slack slash commands to make getting information easier for HOT members. Simply write any of the following slash commands in the message field of any Slack channel or direct message:',
       },
     },
     {
@@ -16,7 +16,7 @@ const HELP_BLOCK = {
       text: {
         type: 'mrkdwn',
         text:
-          ':male-doctor:*`/health-tm`* checks the status of the Tasking Manager and return its current status plus other information such as number of mappers currently online and total number of projects hosted.:female-doctor:',
+          ':hospital:*`/health-tm`* checks the status of the Tasking Manager and return its current status plus other information such as number of mappers currently online and total number of projects hosted.',
       },
     },
     {
@@ -24,7 +24,7 @@ const HELP_BLOCK = {
       text: {
         type: 'mrkdwn',
         text:
-          ':clipboard:*`/health-leaderboard`* checks if the Missing Maps Leaderboard is currently up-to-date:clipboard:',
+          ':clipboard:*`/health-leaderboard`* checks if the Missing Maps Leaderboard is currently up-to-date.',
       },
     },
     {
@@ -32,7 +32,7 @@ const HELP_BLOCK = {
       text: {
         type: 'mrkdwn',
         text:
-          ':hot:*`/tm-stats`* returns information on the Tasking Manager, projects, or users depending on parameters used.:hot:\n:small_blue_diamond:Use `/tm-stats help` for more information on the command.',
+          ':hot:*`/tm-stats`* returns information on the Tasking Manager, projects, or users depending on parameters used.\n:small_blue_diamond:Use `/tm-stats help` for more information on the command.',
       },
     },
     {
@@ -40,7 +40,7 @@ const HELP_BLOCK = {
       text: {
         type: 'mrkdwn',
         text:
-          ':page_with_curl:*`/osmcha-stats`* allows users to filter changesets based on project ID or hashtag(s) and returns stats on the changesets.:page_with_curl:\n:small_blue_diamond:Use `/osmcha-stats help` for more information on the command.',
+          ':page_with_curl:*`/osmcha-stats`* allows users to filter changesets based on project ID or hashtag(s) and returns stats on the changesets.\n:small_blue_diamond:Use `/osmcha-stats help` for more information on the command.',
       },
     },
   ],
