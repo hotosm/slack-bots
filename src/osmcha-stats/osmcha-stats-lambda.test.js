@@ -524,7 +524,7 @@ test('osmcha-stats return generic error message if an exception was thrown - que
   sendToSlackStub.restore()
 })
 
-test.skip('osmcha-stats return correct message if user input valid comment hashtag(s) and dataset is not too big', async (t) => {
+test('osmcha-stats return success message if user input valid comment hashtag(s) and dataset is not too big', async (t) => {
   process.env.OSMCHA_BASE_URL = 'https://osmcha.org/'
 
   const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
@@ -532,11 +532,90 @@ test.skip('osmcha-stats return correct message if user input valid comment hasht
       Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
     )
   })
+
+  const fetchChangesetDataWithRetryStub = sinon
+    .stub(lambda, 'fetchChangesetDataWithRetry')
+    .returns(
+      Promise.resolve({
+        count: 15,
+        changesets: 30,
+        reasons: [
+          {
+            harmful_changesets: 0,
+            changesets: 10,
+            checked_changesets: 0,
+            name: 'Review requested',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 8,
+            checked_changesets: 0,
+            name: 'possible import',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 2,
+            checked_changesets: 0,
+            name: 'mass modification',
+          },
+        ],
+        complete: true,
+      })
+    )
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(
+    buildMockSNSEvent('#ChikugoRiver #CrisisMappersJAPAN #FuruhashiLab')
+  )
+
+  sinon.assert.callCount(awsSSMStub, 1)
+  sinon.assert.callCount(fetchChangesetDataWithRetryStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:page_with_curl: There are *30 changesets* under <https://osmcha.org/?filters=%7B%22date__gte%22%3A%5B%7B%22label%22%3A%22%22%2C%22value%22%3A%22%22%7D%5D%2C%22comment%22%3A%5B%7B%22label%22%3A%22%23ChikugoRiver%20%23CrisisMappersJAPAN%20%23FuruhashiLab%22%2C%22value%22%3A%22%23ChikugoRiver%20%23CrisisMappersJAPAN%20%23FuruhashiLab%22%7D%5D%7D|comment(s): #ChikugoRiver #CrisisMappersJAPAN #FuruhashiLab>.`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:warning: *15 or 50% of changesets* have been flagged as suspicious.\n:small_red_triangle: Here is the breakdown of flags: :small_red_triangle_down:`,
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: '*Review requested*: 10' },
+            { type: 'mrkdwn', text: '*possible import*: 8' },
+            { type: 'mrkdwn', text: '*mass modification*: 2' },
+          ],
+        },
+      ],
+    }),
+    true
+  )
+
+  t.end()
+  process.env.OSMCHA_BASE_URL = undefined
+  awsSSMStub.restore()
+  fetchChangesetDataWithRetryStub.restore()
+  sendToSlackStub.restore()
 })
 
 test.skip('osmcha-stats return error message if user input comment hashtag(s) with zero results', async (t) => {})
 
-test.skip('osmcha-stats return success message if user input valid comment hashtag(s) and complete dataset is too big but retry with one month filter successful', async (t) => {})
+test.skip('osmcha-stats return correct message with if user input valid comment hashtag(s) and complete dataset is too big but retry with one month filter successful', async (t) => {})
 
 test.skip('osmcha-stats return error message if user input comment hashtag(s) and dataset is too big even with one month filter', async (t) => {})
 
