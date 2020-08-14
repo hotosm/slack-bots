@@ -1,5 +1,5 @@
 {
-  "name": "welcome-bot",
+  "name": "slack-bot",
   "version": "1.0.0",
   "description": "",
   "scripts": {
@@ -11,6 +11,10 @@
   },
   "author": "Ramya Ragupathy <r.ragupathy85@gmail.com>",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hotosm/slack-bots/issues"
+  },
+  "homepage": "https://github.com/hotosm/slack-bots#readme",
   "dependencies": {},
   "devDependencies": {
     "@mapbox/cloudfriend": "^4.2.0",
