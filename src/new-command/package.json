@@ -1,0 +1,17 @@
+{
+  "name": "new-command",
+  "version": "1.0.0",
+  "description": "// Short description of command and the information it sends to the user //",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotosm/slack-bots.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.6.0"
+  }
+}

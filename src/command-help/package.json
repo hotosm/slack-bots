@@ -1,0 +1,22 @@
+{
+  "name": "command-help",
+  "version": "1.0.0",
+  "description": "Returns list and brief explanation of existing Slack slash commands",
+  "main": "command-help.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotosm/slack-bots.git"
+  },
+  "author": "Andria Hibe <andriacohibe@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hotosm/slack-bots/issues"
+  },
+  "homepage": "https://github.com/hotosm/slack-bots#readme",
+  "dependencies": {
+    "fetch": "^1.1.0"
+  }
+}
