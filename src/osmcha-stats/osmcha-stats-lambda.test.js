@@ -673,7 +673,92 @@ test('osmcha-stats return error message if user input comment hashtag(s) with ze
   sendToSlackStub.restore()
 })
 
-test.skip('osmcha-stats return correct message with if user input valid comment hashtag(s) and complete dataset is too big but retry with one month filter successful', async (t) => {})
+test('osmcha-stats return correct message with if user input valid comment hashtag(s) and complete dataset is too big but retry with one month filter successful', async (t) => {
+  process.env.OSMCHA_BASE_URL = 'https://osmcha.org/'
+
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const fetchChangesetDataWithRetryStub = sinon
+    .stub(lambda, 'fetchChangesetDataWithRetry')
+    .returns(
+      Promise.resolve({
+        count: 3000,
+        changesets: 4500,
+        reasons: [
+          {
+            harmful_changesets: 0,
+            changesets: 2800,
+            checked_changesets: 0,
+            name: 'Review requested',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 100,
+            checked_changesets: 0,
+            name: 'possible import',
+          },
+          {
+            harmful_changesets: 0,
+            changesets: 100,
+            checked_changesets: 0,
+            name: 'mass modification',
+          },
+        ],
+        complete: false,
+      })
+    )
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent('#chikugoriver'))
+
+  sinon.assert.callCount(awsSSMStub, 1)
+  sinon.assert.callCount(fetchChangesetDataWithRetryStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:page_with_curl: There are *4500 changesets* under <https://osmcha.org/?filters=%7B%22date__gte%22%3A%5B%7B%22label%22%3A%22%22%2C%22value%22%3A%22%22%7D%5D%2C%22comment%22%3A%5B%7B%22label%22%3A%22%23chikugoriver%22%2C%22value%22%3A%22%23chikugoriver%22%7D%5D%7D|comment(s): #chikugoriver>\nDue to the large dataset, we are only showing the data from last month.\nAdd more hashtags to filter the results further or click on the hyperlink to see all changesets in OSMCha.`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:warning: *3000 or 67% of changesets* have been flagged as suspicious.\n:small_red_triangle: Here is the breakdown of flags: :small_red_triangle_down:`,
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: '*Review requested*: 2800' },
+            { type: 'mrkdwn', text: '*possible import*: 100' },
+            { type: 'mrkdwn', text: '*mass modification*: 100' },
+          ],
+        },
+      ],
+    }),
+    true
+  )
+
+  t.end()
+  process.env.OSMCHA_BASE_URL = undefined
+  awsSSMStub.restore()
+  fetchChangesetDataWithRetryStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('osmcha-stats return error message if user input comment hashtag(s) and dataset is too big even with one month filter', async (t) => {})
 
