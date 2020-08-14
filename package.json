@@ -17,6 +17,9 @@
     "express": "^4.16.4"
   },
   "devDependencies": {
-    "@mapbox/cloudfriend": "^4.2.0"
+    "@mapbox/cloudfriend": "^4.2.0",
+    "eslint": "^7.6.0",
+    "eslint-config-prettier": "^6.11.0",
+    "prettier": "^2.0.5"
   }
 }

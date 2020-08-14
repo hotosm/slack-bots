@@ -1,0 +1,22 @@
+{
+  "name": "osmcha-stats",
+  "version": "1.0.0",
+  "description": "Returns changeset stats depending on user-input project ID or hashtags",
+  "main": "osmcha-stats-lambda.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotosm/slack-bots.git"
+  },
+  "author": "Andria Hibe <andriacohibe@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hotosm/slack-bots/issues"
+  },
+  "homepage": "https://github.com/hotosm/slack-bots#readme",
+  "dependencies": {
+    "node-fetch": "^2.6.0"
+  }
+}
