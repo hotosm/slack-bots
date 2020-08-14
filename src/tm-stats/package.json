@@ -18,5 +18,11 @@
   "homepage": "https://github.com/hotosm/slack-bots#readme",
   "dependencies": {
     "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "@mapbox/mock-aws-sdk-js": "^1.0.0",
+    "sinon": "^9.0.3",
+    "tap-spec": "^5.0.0",
+    "tape": "^5.0.1"
   }
 }
