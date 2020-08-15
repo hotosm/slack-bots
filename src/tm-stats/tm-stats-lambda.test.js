@@ -55,7 +55,7 @@ test('checkIfProjectExists returns false if project ID is invalid', async (t) =>
     .stub(fetch, 'Promise')
     .returns(Promise.resolve({ status: 404 }))
 
-  const checkIfProjectExistResult = await lambda.checkIfProjectExists(8989)
+  const checkIfProjectExistResult = await lambda.checkIfProjectExists(1)
 
   sinon.assert.callCount(fetchStub, 1)
 
@@ -65,7 +65,24 @@ test('checkIfProjectExists returns false if project ID is invalid', async (t) =>
   fetchStub.restore()
 })
 
-test.skip('checkIfProjectExist returns returns error if Tasking Manager is down', async (t) => {})
+test('checkIfProjectExist throws error if Tasking Manager is down', async (t) => {
+  const fetchStub = sinon
+    .stub(fetch, 'Promise')
+    .returns(Promise.resolve({ status: 500 }))
+
+  try {
+    await lambda.checkIfProjectExists(8989)
+    t.fail('Should not get here')
+  } catch (err) {
+    t.ok(err)
+    t.equal(err.message, 'Status 500 when calling Tasking Manager')
+  }
+
+  sinon.assert.callCount(fetchStub, 1)
+
+  t.end()
+  fetchStub.restore()
+})
 
 test.skip('sendTmStats returns success block in successful query', async (t) => {})
 
