@@ -1,6 +1,6 @@
 const test = require('tape')
 const sinon = require('sinon')
-var AWS = require('@mapbox/mock-aws-sdk-js')
+const AWS = require('@mapbox/mock-aws-sdk-js')
 const fetch = require('node-fetch')
 
 const lambda = require('./tm-stats-lambda')
@@ -35,4 +35,67 @@ const buildMockSNSEvent = (parameter) => {
   }
 }
 
-test('description', async (t) => {})
+test('checkIfProjectExists returns true if project ID is valid', async (t) => {
+  const fetchStub = sinon
+    .stub(fetch, 'Promise')
+    .returns(Promise.resolve({ status: 200 }))
+
+  const checkIfProjectExistResult = await lambda.checkIfProjectExists(8989)
+
+  sinon.assert.callCount(fetchStub, 1)
+
+  t.equal(checkIfProjectExistResult, true)
+
+  t.end()
+  fetchStub.restore()
+})
+
+test.skip('checkIfProjectExists returns false if project ID is invalid', async (t) => {})
+
+test.skip('checkIfProjectExist returns returns error if Tasking Manager is down', async (t) => {})
+
+test.skip('sendTmStats returns success block in successful query', async (t) => {})
+
+test.skip('sendTmStats returns error if fetch status is not 200', async (t) => {})
+
+test.skip('sendTmStats returns error if JSON parsing failed', async (t) => {})
+
+test.skip('sendProjectStats returns success block in successful query', async (t) => {})
+
+test.skip('sendProjectStats returns error if fetch status is not 200', async (t) => {})
+
+test.skip('sendProjectStats returns error if JSON parsing failed', async (t) => {})
+
+test.skip('sendUserStats returns success block in successful query', async (t) => {})
+
+test.skip('sendUserStats returns error if fetch status is 400s', async (t) => {})
+
+test.skip('sendUserStats returns error if fetch status is 500', async (t) => {})
+
+test.skip('sendUserStats returns error if JSON parsing failed', async (t) => {})
+
+test.skip('sendProjectUserStats  returns success block in successful query', async (t) => {})
+
+test.skip('sendProjectUserStats return error if user cannot be found', async (t) => {})
+
+test.skip('sendProjectUserStats returns error if fetch status is not 200', async (t) => {})
+
+test.skip('sendProjectUserStats returns error if JSON parsing failed', async (t) => {})
+
+test.skip('tm-stats send help message if `help` is inputted as parameter', async (t) => {})
+
+test.skip('tm-stats calls sendTmStats if no parameters were passed', async (t) => {})
+
+test.skip('tm-stats calls sendProjectStats if parameter is all digit and project exists', async (t) => {})
+
+test.skip('tm-stats calls sendProjectUserStats if first parameter is all digit and project exists', async (t) => {})
+
+test.skip('tm-stats calls sendUserStats if first parameter contain non-digit character', async (t) => {})
+
+test.skip('tm-stats calls sendUserStats if first parameter is all digit but not a project', async (t) => {})
+
+test.skip('tm-stats calls sendUserStats if parameter contains non-digit character', async (t) => {})
+
+test.skip('tm-stats calls sendUserStats if parameter is all digit but not a project', async (t) => {})
+
+test.skip('tm-stats return generic error message for other exceptions thrown in lambda', async (t) => {})
