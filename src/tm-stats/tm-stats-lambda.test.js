@@ -5,6 +5,7 @@ const fetch = require('node-fetch')
 
 const lambda = require('./tm-stats-lambda')
 const utils = require('./slack-utils')
+const sendTaskingManagerStats = require('./send-tm-stats')
 
 const buildMockSNSEvent = (parameter) => {
   return {
@@ -84,7 +85,64 @@ test('checkIfProjectExist throws error if Tasking Manager is down', async (t) =>
   fetchStub.restore()
 })
 
-test.skip('sendTmStats returns success block in successful query', async (t) => {})
+test('sendTmStats returns success block in successful query', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise').returns(
+    Promise.resolve({
+      status: 200,
+      json: () => ({
+        mappersOnline: 10,
+        tasksMapped: 10000,
+        totalMappers: 100,
+        totalProjects: 1000,
+      }),
+    })
+  )
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await sendTaskingManagerStats('responseURL', 'tmApiBaseUrl')
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text:
+                ':female-construction-worker::male-construction-worker: *Number of Mappers Online*: 10',
+            },
+            {
+              type: 'mrkdwn',
+              text: ':round_pushpin: *Number of Mappers*: 100',
+            },
+            {
+              type: 'mrkdwn',
+              text:
+                ':teamwork-dreamwork::teamwork-dreamwork: *Number of Tasks Mapped*: 10000',
+            },
+            {
+              type: 'mrkdwn',
+              text: ':world_map: *Number of Projects Hosted*: 1000',
+            },
+          ],
+        },
+      ],
+    }),
+    true
+  )
+
+  t.end()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('sendTmStats returns error if fetch status is not 200', async (t) => {})
 
