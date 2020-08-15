@@ -18,7 +18,6 @@ Check out the [contribute docs](https://github.com/hotosm/slack-bots/blob/master
 7. Fill out the details. Under the *Request URL* field, paste the URL you copied earlier. Save your changes.
 8. Make sure the app is installed in your workspace (under **Basic Information**, *Add features and functionality* and *Install your app to your workspace* should have a checkmark).
 9. Head to your chosen Slack workspace and try out your Slack slash command.
-10. The logs for your command can be accessed in CloudWatch Log groups.
 
 ## Create AWS CloudFormation stack
 There are numerous ways to create a CloudFormation stack:
@@ -42,3 +41,7 @@ The whole repo is automatically deployed after every commit to a HOT S3 bucket w
 4. Check that the SNS topic and Lambda for your command are connected.
 5. Get the invoke URL for the `slack-router` API in the API Gateway AWS console. Append the route `/slack-to-lambda` to the end of the URL and copy.
 6. Go to your app's dashboard in the [Slack API website](https://api.slack.com/apps) and follow instructions number 6-9 on how to **Create a Slack App** above.
+
+### Troubleshooting
+  + The logs for your command can be accessed in CloudWatch Log groups.
+  + If you are modifying an existing command, some variables may be stored in HOT's AWS Systems Manager, comment in the issue ticket and tag @ramyaragupathy to get access.
