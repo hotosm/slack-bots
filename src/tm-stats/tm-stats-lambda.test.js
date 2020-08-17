@@ -684,7 +684,53 @@ test('sendProjectUserStats returns success block in successful query', async (t)
   sendToSlackStub.restore()
 })
 
-test.skip('sendProjectUserStats return error if user cannot be found', async (t) => {})
+test('sendProjectUserStats return error if user cannot be found', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise').returns(
+    Promise.resolve({
+      status: 404,
+      json: () => {
+        throw new Error('User not found')
+      },
+    })
+  )
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await user.sendProjectUserStats(
+    'responseURL',
+    'tmToken',
+    'tmApiBaseUrl',
+    'tmBaseUrl',
+    8989,
+    'userName'
+  )
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':x: Please check that the project ID / username is correct.\nUse the `/tm-stats help` command for additional information.',
+          },
+        },
+      ],
+    }),
+    true
+  )
+
+  t.end()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('sendProjectUserStats returns error if fetch status is not 200', async (t) => {})
 
