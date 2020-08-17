@@ -104,7 +104,7 @@ test('sendTmStats returns success block in successful query', async (t) => {
     .stub(utils, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  await sendTaskingManagerStats('responseURL', 'tmApiBaseUrl')
+  await sendTaskingManagerStats.default('responseURL', 'tmApiBaseUrl')
 
   sinon.assert.callCount(fetchStub, 1)
   sinon.assert.callCount(sendToSlackStub, 1)
@@ -158,7 +158,7 @@ test('sendTmStats returns error if fetch status is not 200', async (t) => {
     .stub(utils, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  await sendTaskingManagerStats('responseURL', 'tmApiBaseUrl')
+  await sendTaskingManagerStats.default('responseURL', 'tmApiBaseUrl')
 
   sinon.assert.callCount(fetchStub, 1)
   sinon.assert.callCount(errorConsoleSpy, 1)
@@ -197,7 +197,7 @@ test('sendTmStats returns error if JSON parsing failed', async (t) => {
     .stub(utils, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  await sendTaskingManagerStats('responseURL', 'tmApiBaseUrl')
+  await sendTaskingManagerStats.default('responseURL', 'tmApiBaseUrl')
 
   sinon.assert.callCount(fetchStub, 1)
   sinon.assert.callCount(sendToSlackStub, 1)
@@ -252,7 +252,12 @@ test('sendProjectStats returns success block in successful query', async (t) => 
     .stub(utils, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  await sendProjectStats('responseURL', 'tmApiBaseUrl', 'tmBaseUrl/', 8989)
+  await sendProjectStats.default(
+    'responseURL',
+    'tmApiBaseUrl',
+    'tmBaseUrl/',
+    8989
+  )
 
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
@@ -328,7 +333,12 @@ test('sendProjectStats returns error if fetch status is not 200', async (t) => {
     .stub(utils, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  await sendProjectStats('responseURL', 'tmApiBaseUrl', 'tmBaseUrl/', 8989)
+  await sendProjectStats.default(
+    'responseURL',
+    'tmApiBaseUrl',
+    'tmBaseUrl/',
+    8989
+  )
 
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
@@ -369,7 +379,12 @@ test('sendProjectStats returns error if JSON parsing failed', async (t) => {
     .stub(utils, 'sendToSlack')
     .returns(Promise.resolve(null))
 
-  await sendProjectStats('responseURL', 'tmApiBaseUrl', 'tmBaseUrl/', 8989)
+  await sendProjectStats.default(
+    'responseURL',
+    'tmApiBaseUrl',
+    'tmBaseUrl/',
+    8989
+  )
 
   sinon.assert.callCount(fetchStub, 2)
   sinon.assert.callCount(sendToSlackStub, 1)
@@ -807,20 +822,390 @@ test('sendProjectUserStats returns error if JSON parsing failed', async (t) => {
   sendToSlackStub.restore()
 })
 
-test.skip('tm-stats send help message if `help` is inputted as parameter', async (t) => {})
+test('tm-stats send help message if `help` is inputted as parameter', async (t) => {
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
 
-test.skip('tm-stats calls sendTmStats if no parameters were passed', async (t) => {})
+  await lambda.handler(buildMockSNSEvent('help'))
 
-test.skip('tm-stats calls sendProjectStats if parameter is all digit and project exists', async (t) => {})
+  sinon.assert.callCount(sendToSlackStub, 1)
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              'The `/tm-stats` command will return different information depending on what you input:',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':small_blue_diamond: `/tm-stats` for stats on the Tasking Manager home page',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':small_blue_diamond: `/tm-stats [projectID]` for stats on a Tasking Manager project (e.g. `/tm-stats 8172`)',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':small_blue_diamond: `/tm-stats [username]` for stats on a user (e.g. `/tm-stats Charlie Brown`)',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':small_blue_diamond: `/tm-stats [projectID username]` for stats on user contribution in a Tasking Manager project (e.g. `/tm-stats 8172 Charlie Brown`)',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: 'If you need more help, post a message at <#C319P09PB>',
+          },
+        },
+      ],
+    }),
+    true
+  )
 
-test.skip('tm-stats calls sendProjectUserStats if first parameter is all digit and project exists', async (t) => {})
+  t.end()
+  sendToSlackStub.restore()
+})
 
-test.skip('tm-stats calls sendUserStats if first parameter contain non-digit character', async (t) => {})
+test('tm-stats calls sendTmStats if no parameters were passed', async (t) => {
+  const sendTaskingManagerStatsStub = sinon
+    .stub(sendTaskingManagerStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendProjectStatsStub = sinon
+    .stub(sendProjectStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendUserStatsStub = sinon
+    .stub(user, 'sendUserStats')
+    .returns(Promise.resolve(null))
+  const sendProjectUserStatsStub = sinon
+    .stub(user, 'sendProjectUserStats')
+    .returns(Promise.resolve(null))
 
-test.skip('tm-stats calls sendUserStats if first parameter is all digit but not a project', async (t) => {})
+  await lambda.handler(buildMockSNSEvent(''))
 
-test.skip('tm-stats calls sendUserStats if parameter contains non-digit character', async (t) => {})
+  sinon.assert.callCount(sendTaskingManagerStatsStub, 1)
+  sinon.assert.callCount(sendProjectStatsStub, 0)
+  sinon.assert.callCount(sendUserStatsStub, 0)
+  sinon.assert.callCount(sendProjectUserStatsStub, 0)
 
-test.skip('tm-stats calls sendUserStats if parameter is all digit but not a project', async (t) => {})
+  t.end()
+  sendTaskingManagerStatsStub.restore()
+  sendProjectStatsStub.restore()
+  sendUserStatsStub.restore()
+  sendProjectUserStatsStub.restore()
+})
 
-test.skip('tm-stats return generic error message for other exceptions thrown in lambda', async (t) => {})
+test('tm-stats calls sendProjectStats if parameter is all digit and project exists', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const checkIfProjectExistsStub = sinon
+    .stub(lambda, 'checkIfProjectExists')
+    .returns(Promise.resolve(true))
+
+  const sendTaskingManagerStatsStub = sinon
+    .stub(sendTaskingManagerStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendProjectStatsStub = sinon
+    .stub(sendProjectStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendUserStatsStub = sinon
+    .stub(user, 'sendUserStats')
+    .returns(Promise.resolve(null))
+  const sendProjectUserStatsStub = sinon
+    .stub(user, 'sendProjectUserStats')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent(8989))
+
+  sinon.assert.callCount(sendTaskingManagerStatsStub, 0)
+  sinon.assert.callCount(sendProjectStatsStub, 1)
+  sinon.assert.callCount(sendUserStatsStub, 0)
+  sinon.assert.callCount(sendProjectUserStatsStub, 0)
+
+  t.end()
+  awsSSMStub.restore()
+  checkIfProjectExistsStub.restore()
+  sendTaskingManagerStatsStub.restore()
+  sendProjectStatsStub.restore()
+  sendUserStatsStub.restore()
+  sendProjectUserStatsStub.restore()
+})
+
+test('tm-stats calls sendProjectUserStats if first parameter is all digit and project exists', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const checkIfProjectExistsStub = sinon
+    .stub(lambda, 'checkIfProjectExists')
+    .returns(Promise.resolve(true))
+
+  const sendTaskingManagerStatsStub = sinon
+    .stub(sendTaskingManagerStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendProjectStatsStub = sinon
+    .stub(sendProjectStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendUserStatsStub = sinon
+    .stub(user, 'sendUserStats')
+    .returns(Promise.resolve(null))
+  const sendProjectUserStatsStub = sinon
+    .stub(user, 'sendProjectUserStats')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent('8989+Charlie+Brown'))
+
+  sinon.assert.callCount(sendTaskingManagerStatsStub, 0)
+  sinon.assert.callCount(sendProjectStatsStub, 0)
+  sinon.assert.callCount(sendUserStatsStub, 0)
+  sinon.assert.callCount(sendProjectUserStatsStub, 1)
+
+  t.end()
+  awsSSMStub.restore()
+  checkIfProjectExistsStub.restore()
+  sendTaskingManagerStatsStub.restore()
+  sendProjectStatsStub.restore()
+  sendUserStatsStub.restore()
+  sendProjectUserStatsStub.restore()
+})
+
+test('tm-stats calls sendUserStats if first parameter contain non-digit character', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const sendTaskingManagerStatsStub = sinon
+    .stub(sendTaskingManagerStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendProjectStatsStub = sinon
+    .stub(sendProjectStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendUserStatsStub = sinon
+    .stub(user, 'sendUserStats')
+    .returns(Promise.resolve(null))
+  const sendProjectUserStatsStub = sinon
+    .stub(user, 'sendProjectUserStats')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent('123a user'))
+
+  sinon.assert.callCount(sendTaskingManagerStatsStub, 0)
+  sinon.assert.callCount(sendProjectStatsStub, 0)
+  sinon.assert.callCount(sendUserStatsStub, 1)
+  sinon.assert.callCount(sendProjectUserStatsStub, 0)
+
+  t.end()
+  awsSSMStub.restore()
+  sendTaskingManagerStatsStub.restore()
+  sendProjectStatsStub.restore()
+  sendUserStatsStub.restore()
+  sendProjectUserStatsStub.restore()
+})
+
+test('tm-stats calls sendUserStats if first parameter is all digit but not a project', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const checkIfProjectExistsStub = sinon
+    .stub(lambda, 'checkIfProjectExists')
+    .returns(Promise.resolve(false))
+
+  const sendTaskingManagerStatsStub = sinon
+    .stub(sendTaskingManagerStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendProjectStatsStub = sinon
+    .stub(sendProjectStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendUserStatsStub = sinon
+    .stub(user, 'sendUserStats')
+    .returns(Promise.resolve(null))
+  const sendProjectUserStatsStub = sinon
+    .stub(user, 'sendProjectUserStats')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent('8989+Charlie+Brown'))
+
+  sinon.assert.callCount(sendTaskingManagerStatsStub, 0)
+  sinon.assert.callCount(sendProjectStatsStub, 0)
+  sinon.assert.callCount(sendUserStatsStub, 1)
+  sinon.assert.callCount(sendProjectUserStatsStub, 0)
+
+  t.end()
+  awsSSMStub.restore()
+  checkIfProjectExistsStub.restore()
+  sendTaskingManagerStatsStub.restore()
+  sendProjectStatsStub.restore()
+  sendUserStatsStub.restore()
+  sendProjectUserStatsStub.restore()
+})
+
+test('tm-stats calls sendUserStats if parameter contains non-digit character', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const sendTaskingManagerStatsStub = sinon
+    .stub(sendTaskingManagerStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendProjectStatsStub = sinon
+    .stub(sendProjectStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendUserStatsStub = sinon
+    .stub(user, 'sendUserStats')
+    .returns(Promise.resolve(null))
+  const sendProjectUserStatsStub = sinon
+    .stub(user, 'sendProjectUserStats')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent('123user'))
+
+  sinon.assert.callCount(sendTaskingManagerStatsStub, 0)
+  sinon.assert.callCount(sendProjectStatsStub, 0)
+  sinon.assert.callCount(sendUserStatsStub, 1)
+  sinon.assert.callCount(sendProjectUserStatsStub, 0)
+
+  t.end()
+  awsSSMStub.restore()
+  sendTaskingManagerStatsStub.restore()
+  sendProjectStatsStub.restore()
+  sendUserStatsStub.restore()
+  sendProjectUserStatsStub.restore()
+})
+
+test('tm-stats calls sendUserStats if parameter is all digit but not a project', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const checkIfProjectExistsStub = sinon
+    .stub(lambda, 'checkIfProjectExists')
+    .returns(Promise.resolve(false))
+
+  const sendTaskingManagerStatsStub = sinon
+    .stub(sendTaskingManagerStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendProjectStatsStub = sinon
+    .stub(sendProjectStats, 'default')
+    .returns(Promise.resolve(null))
+  const sendUserStatsStub = sinon
+    .stub(user, 'sendUserStats')
+    .returns(Promise.resolve(null))
+  const sendProjectUserStatsStub = sinon
+    .stub(user, 'sendProjectUserStats')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent(12345))
+
+  sinon.assert.callCount(sendTaskingManagerStatsStub, 0)
+  sinon.assert.callCount(sendProjectStatsStub, 0)
+  sinon.assert.callCount(sendUserStatsStub, 1)
+  sinon.assert.callCount(sendProjectUserStatsStub, 0)
+
+  t.end()
+  awsSSMStub.restore()
+  checkIfProjectExistsStub.restore()
+  sendTaskingManagerStatsStub.restore()
+  sendProjectStatsStub.restore()
+  sendUserStatsStub.restore()
+  sendProjectUserStatsStub.restore()
+})
+
+test('tm-stats return generic error message if checkIfProjectExists throws an error', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(
+      Promise.resolve({ Parameter: { Value: 'faketokenfortesting' } })
+    )
+  })
+
+  const checkIfProjectExistsStub = sinon
+    .stub(lambda, 'checkIfProjectExists')
+    .returns(
+      Promise.reject(new Error('Status 500 when calling Tasking Manager'))
+    )
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent(12345))
+
+  sinon.assert.callCount(checkIfProjectExistsStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      text:
+        ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+    }),
+    true
+  )
+  t.end()
+  awsSSMStub.restore()
+  checkIfProjectExistsStub.restore()
+  sendToSlackStub.restore()
+})
+
+test('tm-stats return generic error message for other exceptions thrown in lambda', async (t) => {
+  const awsSSMStub = AWS.stub('SSM', 'getParameter', function () {
+    this.request.promise.returns(Promise.reject('AWS SSM call failed'))
+  })
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await lambda.handler(buildMockSNSEvent(12345))
+
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('https://hooks.slack.com/commands/T042TUWCB', {
+      response_type: 'ephemeral',
+      text:
+        ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+    }),
+    true
+  )
+  t.end()
+  awsSSMStub.restore()
+  sendToSlackStub.restore()
+})
