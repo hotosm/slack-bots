@@ -7,6 +7,7 @@ const lambda = require('./tm-stats-lambda')
 const utils = require('./slack-utils')
 const sendTaskingManagerStats = require('./send-tm-stats')
 const sendProjectStats = require('./send-project-stats')
+const user = require('./user-stats')
 
 const buildMockSNSEvent = (parameter) => {
   return {
@@ -374,7 +375,113 @@ test('sendProjectStats returns error if JSON parsing failed', async (t) => {
   sendToSlackStub.restore()
 })
 
-test.skip('sendUserStats returns success block in successful query', async (t) => {})
+test('sendUserStats returns success block in successful query', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise').returns(
+    Promise.resolve({
+      status: 200,
+      json: () => ({
+        totalTimeSpent: 9574003,
+        timeSpentMapping: 1023470,
+        timeSpentValidating: 8550533,
+        projectsMapped: 192,
+        tasksMapped: 393,
+        tasksValidated: 29948,
+        tasksInvalidated: 1669,
+        tasksInvalidatedByOthers: 1372,
+        tasksValidatedByOthers: 2784,
+      }),
+    })
+  )
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await user.sendUserStats(
+    'responseURL',
+    'tmToken',
+    'tmApiBaseUrl',
+    'tmBaseUrl',
+    'userName'
+  )
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':star2: *User <tmBaseUrlusers/userName|userName> has mapped 192 project(s)* :star2:',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              'They have spent *110 days 19 hours 26 minutes 43 seconds* in total contributing to the community',
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text:
+                ':mantelpiece_clock: *11 days 20 hours 17 minutes 50 seconds* mapping',
+            },
+            {
+              type: 'mrkdwn',
+              text:
+                ':mantelpiece_clock: *98 days 23 hours 8 minutes 53 seconds* validating',
+            },
+          ],
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':round_pushpin: They have mapped *393 tasks* :round_pushpin:',
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: ':white_check_mark: Validated *29948 tasks*',
+            },
+            {
+              type: 'mrkdwn',
+              text: ':negative_squared_cross_mark: Invalidated *1669 tasks*',
+            },
+            {
+              type: 'mrkdwn',
+              text: ':heavy_check_mark: Had *2784 tasks* validated by others',
+            },
+            {
+              type: 'mrkdwn',
+              text:
+                ':heavy_multiplication_x: Had *1372 tasks* invalidated by others',
+            },
+          ],
+        },
+      ],
+    }),
+    true
+  )
+
+  t.end()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('sendUserStats returns error if fetch status is 400s', async (t) => {})
 
