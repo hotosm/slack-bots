@@ -732,7 +732,40 @@ test('sendProjectUserStats return error if user cannot be found', async (t) => {
   sendToSlackStub.restore()
 })
 
-test.skip('sendProjectUserStats returns error if fetch status is not 200', async (t) => {})
+test('sendProjectUserStats returns error if fetch status is not 200', async (t) => {
+  const fetchStub = sinon
+    .stub(fetch, 'Promise')
+    .returns(Promise.resolve({ status: 500 }))
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await user.sendProjectUserStats(
+    'responseURL',
+    'tmToken',
+    'tmApiBaseUrl',
+    'tmBaseUrl',
+    8989,
+    'userName'
+  )
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      text:
+        ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+    }),
+    true
+  )
+
+  t.end()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('sendProjectUserStats returns error if JSON parsing failed', async (t) => {})
 
