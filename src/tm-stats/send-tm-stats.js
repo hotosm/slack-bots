@@ -1,6 +1,6 @@
 const fetch = require('node-fetch')
 
-const { ERROR_MESSAGE, sendToSlack } = require('./slack-utils')
+const utils = require('./slack-utils')
 
 const sendTaskingManagerStats = async (responseURL, tmApiBaseUrl) => {
   try {
@@ -45,12 +45,12 @@ const sendTaskingManagerStats = async (responseURL, tmApiBaseUrl) => {
       ],
     }
 
-    await sendToSlack(responseURL, taskingManagerStatsBlock)
+    await utils.sendToSlack(responseURL, taskingManagerStatsBlock)
   } catch (error) {
     console.error(error)
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
 
-module.exports = sendTaskingManagerStats
+exports.default = sendTaskingManagerStats

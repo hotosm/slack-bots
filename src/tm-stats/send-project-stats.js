@@ -1,6 +1,6 @@
 const fetch = require('node-fetch')
 
-const { ERROR_MESSAGE, sendToSlack } = require('./slack-utils')
+const utils = require('./slack-utils')
 
 const sendProjectStats = async (
   responseURL,
@@ -79,12 +79,12 @@ const sendProjectStats = async (
       ],
     }
 
-    await sendToSlack(responseURL, projectStatsBlock)
+    await utils.sendToSlack(responseURL, projectStatsBlock)
   } catch (error) {
     console.error(error)
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
 
-module.exports = sendProjectStats
+exports.default = sendProjectStats

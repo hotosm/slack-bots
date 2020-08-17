@@ -1,9 +1,9 @@
 const AWS = require('aws-sdk')
 const fetch = require('node-fetch')
 
-const { ERROR_MESSAGE, HELP_BLOCK, sendToSlack } = require('./slack-utils')
+const utils = require('./slack-utils')
 const sendTaskingManagerStats = require('./send-tm-stats')
-const { sendProjectUserStats, sendUserStats } = require('./user-stats')
+const user = require('./user-stats')
 const sendProjectStats = require('./send-project-stats')
 
 const TM_API_BASE_URL = process.env.TM_API_BASE_URL
@@ -13,7 +13,7 @@ const containsNonDigitCharacter = (parameter) => {
   return !!parameter.match(/\D/)
 }
 
-const checkIfProjectExists = async (projectId) => {
+exports.checkIfProjectExists = async (projectId) => {
   const projectSummaryURL = `${TM_API_BASE_URL}projects/${projectId}/queries/summary/`
   const projectSummaryRes = await fetch(projectSummaryURL)
 
@@ -31,18 +31,17 @@ exports.handler = async (event) => {
 
   try {
     if (!commandParameters) {
-      await sendTaskingManagerStats(responseURL, TM_API_BASE_URL)
+      await sendTaskingManagerStats.default(responseURL, TM_API_BASE_URL)
       return
     }
 
     if (commandParameters === 'help') {
-      await sendToSlack(responseURL, HELP_BLOCK)
+      await utils.sendToSlack(responseURL, utils.HELP_BLOCK)
       return
     }
 
     const parameterHasPlus = !!commandParameters.match(/\+/)
 
-    // TODO: Add logic to get TM token (put it in the Parameter Store after acquiring?)
     const ssmParams = {
       Name: 'tm-token',
       WithDecryption: true,
@@ -64,7 +63,7 @@ exports.handler = async (event) => {
       const firstParameter = spacedParameters.slice(0, indexFirstSpace)
 
       if (containsNonDigitCharacter(firstParameter)) {
-        await sendUserStats(
+        await user.sendUserStats(
           responseURL,
           tmToken,
           TM_API_BASE_URL,
@@ -75,10 +74,12 @@ exports.handler = async (event) => {
       }
 
       const secondParameter = spacedParameters.slice(indexFirstSpace + 1)
-      const firstParameterIsProject = await checkIfProjectExists(firstParameter)
+      const firstParameterIsProject = await exports.checkIfProjectExists(
+        firstParameter
+      )
 
       if (firstParameterIsProject) {
-        await sendProjectUserStats(
+        await user.sendProjectUserStats(
           responseURL,
           tmToken,
           TM_API_BASE_URL,
@@ -88,7 +89,7 @@ exports.handler = async (event) => {
         )
         return
       }
-      await sendUserStats(
+      await user.sendUserStats(
         responseURL,
         tmToken,
         TM_API_BASE_URL,
@@ -99,7 +100,7 @@ exports.handler = async (event) => {
     }
 
     if (containsNonDigitCharacter(commandParameters)) {
-      await sendUserStats(
+      await user.sendUserStats(
         responseURL,
         tmToken,
         TM_API_BASE_URL,
@@ -109,14 +110,14 @@ exports.handler = async (event) => {
       return
     }
 
-    return (await checkIfProjectExists(commandParameters))
-      ? await sendProjectStats(
+    return (await exports.checkIfProjectExists(commandParameters))
+      ? await sendProjectStats.default(
           responseURL,
           TM_API_BASE_URL,
           TM_BASE_URL,
           commandParameters
         )
-      : await sendUserStats(
+      : await user.sendUserStats(
           responseURL,
           tmToken,
           TM_API_BASE_URL,
@@ -126,6 +127,6 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error(error)
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
