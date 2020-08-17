@@ -483,7 +483,54 @@ test('sendUserStats returns success block in successful query', async (t) => {
   sendToSlackStub.restore()
 })
 
-test.skip('sendUserStats returns error if fetch status is 400s', async (t) => {})
+test('sendUserStats returns error if fetch status is 400s', async (t) => {
+  const errorConsoleSpy = sinon.spy(console, 'error')
+  const fetchStub = sinon
+    .stub(fetch, 'Promise')
+    .returns(Promise.resolve({ status: 400 }))
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await user.sendUserStats(
+    'responseURL',
+    'tmToken',
+    'tmApiBaseUrl',
+    'tmBaseUrl',
+    'userName'
+  )
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(errorConsoleSpy, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    errorConsoleSpy.args[0][0].message,
+    'User cannot be found or accessed'
+  )
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              ':x: Please check that the project ID / username is correct.\nUse the `/tm-stats help` command for additional information.',
+          },
+        },
+      ],
+    }),
+    true
+  )
+
+  t.end()
+  errorConsoleSpy.restore()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('sendUserStats returns error if fetch status is 500', async (t) => {})
 
