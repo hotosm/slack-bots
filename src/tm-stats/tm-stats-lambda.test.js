@@ -147,6 +147,7 @@ test('sendTmStats returns success block in successful query', async (t) => {
 })
 
 test('sendTmStats returns error if fetch status is not 200', async (t) => {
+  const errorConsoleSpy = sinon.spy(console, 'error')
   const fetchStub = sinon.stub(fetch, 'Promise').returns(
     Promise.resolve({
       status: 500,
@@ -160,8 +161,13 @@ test('sendTmStats returns error if fetch status is not 200', async (t) => {
   await sendTaskingManagerStats('responseURL', 'tmApiBaseUrl')
 
   sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(errorConsoleSpy, 1)
   sinon.assert.callCount(sendToSlackStub, 1)
 
+  t.equal(
+    errorConsoleSpy.args[0][0].message,
+    'Cannot get Tasking Manager home page stats'
+  )
   t.equal(
     utils.sendToSlack.calledWith('responseURL', {
       response_type: 'ephemeral',
@@ -173,6 +179,7 @@ test('sendTmStats returns error if fetch status is not 200', async (t) => {
 
   t.end()
   fetchStub.restore()
+  errorConsoleSpy.restore()
   sendToSlackStub.restore()
 })
 
@@ -302,6 +309,7 @@ test('sendProjectStats returns success block in successful query', async (t) => 
 })
 
 test('sendProjectStats returns error if fetch status is not 200', async (t) => {
+  const errorConsoleSpy = sinon.spy(console, 'error')
   const fetchStub = sinon.stub(fetch, 'Promise')
 
   fetchStub.onCall(0).returns(Promise.resolve({ status: 500 }))
@@ -326,6 +334,10 @@ test('sendProjectStats returns error if fetch status is not 200', async (t) => {
   sinon.assert.callCount(sendToSlackStub, 1)
 
   t.equal(
+    errorConsoleSpy.args[0][0].message,
+    'Cannot get project information from Tasking Manager'
+  )
+  t.equal(
     utils.sendToSlack.calledWith('responseURL', {
       response_type: 'ephemeral',
       text:
@@ -335,6 +347,7 @@ test('sendProjectStats returns error if fetch status is not 200', async (t) => {
   )
 
   t.end()
+  errorConsoleSpy.restore()
   fetchStub.restore()
   sendToSlackStub.restore()
 })
@@ -532,11 +545,144 @@ test('sendUserStats returns error if fetch status is 400s', async (t) => {
   sendToSlackStub.restore()
 })
 
-test.skip('sendUserStats returns error if fetch status is 500', async (t) => {})
+test('sendUserStats returns error if fetch status is 500', async (t) => {
+  const errorConsoleSpy = sinon.spy(console, 'error')
+  const fetchStub = sinon
+    .stub(fetch, 'Promise')
+    .returns(Promise.resolve({ status: 500 }))
 
-test.skip('sendUserStats returns error if JSON parsing failed', async (t) => {})
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
 
-test.skip('sendProjectUserStats  returns success block in successful query', async (t) => {})
+  await user.sendUserStats(
+    'responseURL',
+    'tmToken',
+    'tmApiBaseUrl',
+    'tmBaseUrl',
+    'userName'
+  )
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(errorConsoleSpy, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    errorConsoleSpy.args[0][0].message,
+    'Cannot get user stats from Tasking Manager'
+  )
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      text:
+        ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+    }),
+    true
+  )
+
+  t.end()
+  errorConsoleSpy.restore()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
+
+test('sendUserStats returns error if JSON parsing failed', async (t) => {
+  const fetchStub = sinon
+    .stub(fetch, 'Promise')
+    .returns(Promise.resolve({ status: 500 }))
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await user.sendUserStats(
+    'responseURL',
+    'tmToken',
+    'tmApiBaseUrl',
+    'tmBaseUrl',
+    'userName'
+  )
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      text:
+        ':x: Something went wrong with your request. Please try again and if the error persists, post a message at <#C319P09PB>',
+    }),
+    true
+  )
+
+  t.end()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
+
+test('sendProjectUserStats returns success block in successful query', async (t) => {
+  const fetchStub = sinon.stub(fetch, 'Promise').returns(
+    Promise.resolve({
+      status: 200,
+      json: () => ({
+        timeSpentMapping: 816,
+        timeSpentValidating: 190591,
+        totalTimeSpent: 191407,
+      }),
+    })
+  )
+
+  const sendToSlackStub = sinon
+    .stub(utils, 'sendToSlack')
+    .returns(Promise.resolve(null))
+
+  await user.sendProjectUserStats(
+    'responseURL',
+    'tmToken',
+    'tmApiBaseUrl',
+    'tmBaseUrl',
+    8989,
+    'userName'
+  )
+
+  sinon.assert.callCount(fetchStub, 1)
+  sinon.assert.callCount(sendToSlackStub, 1)
+
+  t.equal(
+    utils.sendToSlack.calledWith('responseURL', {
+      response_type: 'ephemeral',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text:
+              'User *userName* has spent *2 days 5 hours 10 minutes 7 seconds* contributing to <tmBaseUrlproject/8989|project 8989>:',
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: ':round_pushpin: 13 minutes 36 seconds mapping',
+            },
+            {
+              type: 'mrkdwn',
+              text:
+                ':white_check_mark: 2 days 4 hours 56 minutes 31 seconds validating',
+            },
+          ],
+        },
+      ],
+    }),
+    true
+  )
+
+  t.end()
+  fetchStub.restore()
+  sendToSlackStub.restore()
+})
 
 test.skip('sendProjectUserStats return error if user cannot be found', async (t) => {})
 
