@@ -37,6 +37,7 @@ For a full explanation of how the application handles and routes events, [visit 
 ## How to use the Slackbot Router
 
 To use the Slackbot Router slash commands, write `/name-of-command` in the message field of any Slack channel or direct message. Some commands might require you to input in additional data such as a project ID or username. When in doubt, you can use the command `/command-help` to see a list of all active slash commands and a short description of each. For some commands, you can also type `/name-of-command help` to see more detailed instructions on how to use them.
+
 The Slackbot Router currently has the following slash commands:
 
 + `/health-tm` - Checks the status of the Tasking Manager and returns its current status and other statistics.
