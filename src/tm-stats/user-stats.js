@@ -95,7 +95,7 @@ const sendUserStats = async (
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `:star2: *User <${userTmURL}|${userName}> has mapped ${projectsMapped} project(s)* :star2:`,
+            text: `:star2: *User <${userTmURL}|${userName}> has mapped ${projectsMapped.toLocaleString()} project(s)* :star2:`,
           },
         },
         {
@@ -128,7 +128,7 @@ const sendUserStats = async (
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `:round_pushpin: They have mapped *${tasksMapped} tasks* :round_pushpin:`,
+            text: `:round_pushpin: They have mapped *${tasksMapped.toLocaleString()} tasks* :round_pushpin:`,
           },
         },
         {
@@ -136,19 +136,19 @@ const sendUserStats = async (
           fields: [
             {
               type: 'mrkdwn',
-              text: `:white_check_mark: Validated *${tasksValidated} tasks*`,
+              text: `:white_check_mark: Validated *${tasksValidated.toLocaleString()} tasks*`,
             },
             {
               type: 'mrkdwn',
-              text: `:negative_squared_cross_mark: Invalidated *${tasksInvalidated} tasks*`,
+              text: `:negative_squared_cross_mark: Invalidated *${tasksInvalidated.toLocaleString()} tasks*`,
             },
             {
               type: 'mrkdwn',
-              text: `:heavy_check_mark: Had *${tasksValidatedByOthers} tasks* validated by others`,
+              text: `:heavy_check_mark: Had *${tasksValidatedByOthers.toLocaleString()} tasks* validated by others`,
             },
             {
               type: 'mrkdwn',
-              text: `:heavy_multiplication_x: Had *${tasksInvalidatedByOthers} tasks* invalidated by others`,
+              text: `:heavy_multiplication_x: Had *${tasksInvalidatedByOthers.toLocaleString()} tasks* invalidated by others`,
             },
           ],
         },

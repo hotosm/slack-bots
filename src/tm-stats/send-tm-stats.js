@@ -26,19 +26,19 @@ const sendTaskingManagerStats = async (responseURL, tmApiBaseUrl) => {
           fields: [
             {
               type: 'mrkdwn',
-              text: `:female-construction-worker::male-construction-worker: *Number of Mappers Online*: ${mappersOnline}`,
+              text: `:female-construction-worker::male-construction-worker: *Number of Mappers Online*: ${mappersOnline.toLocaleString()}`,
             },
             {
               type: 'mrkdwn',
-              text: `:round_pushpin: *Number of Mappers*: ${totalMappers}`,
+              text: `:round_pushpin: *Number of Mappers*: ${totalMappers.toLocaleString()}`,
             },
             {
               type: 'mrkdwn',
-              text: `:teamwork-dreamwork::teamwork-dreamwork: *Number of Tasks Mapped*: ${tasksMapped}`,
+              text: `:teamwork-dreamwork::teamwork-dreamwork: *Number of Tasks Mapped*: ${tasksMapped.toLocaleString()}`,
             },
             {
               type: 'mrkdwn',
-              text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+              text: `:world_map: *Number of Projects Hosted*: ${totalProjects.toLocaleString()}`,
             },
           ],
         },
