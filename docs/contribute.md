@@ -21,16 +21,16 @@
 7. Create folder called 'cloudformation' to store CloudFormation template.
 8. Create Cloudformation template (look at other command cfn templates as a guide), the following parameters and resources are required:
     * BucketName parameter (default: `'stork-us-east-1'`)
-    * GitSha parameter
-    * Lambda function resource
-    * Lambda IAM role resource
-    * Lambda permission resource allowing the SNS to call the handler
-    * SNS topic resource (topic name need to match the command in Slack—e.g. the SNS topic for the `health-tm` slash command needs to also be named `health-tm`)
+    * GitSha [parameter](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html)
+    * [Lambda function](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html) resource
+    * Lambda [IAM role](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html) resource
+    * [Lambda permission](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-permission.html) resource allowing the SNS to call the handler
+    * [SNS topic](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sns-topic.html) resource (`TopicName` need to match the command in Slack—e.g. the SNS topic for the `health-tm` slash command needs to also be named `health-tm`)
 9. Code Lambda handler.
 10. Check [Dev Setup](https://github.com/hotosm/slack-bots/blob/master/docs/dev-setup.md) and try out the command in Slack to make sure it is working as intended.
 11. Create unit tests. Test all event paths that your command may take, including all error messages.
-12. Create README.md file, see `./src/new-command/README.md` for guide on what you need to include.
-13. Add your new command to `./src/command-help/command-help-lambda.js` and `./docs/slash-commands.md` and include a short description.
+12. Create README.md file, see [`./src/new-command/README.md`](https://github.com/hotosm/slack-bots/blob/master/src/new-command/README.md) for a guide on what you need to include.
+13. Add your new command to [`./src/command-help/command-help-lambda.js`](https://github.com/hotosm/slack-bots/tree/master/src/command-help) and [`./docs/slash-commands.md`](https://github.com/hotosm/slack-bots/blob/master/docs/slash-commands.md) and include a short description.
 14. Submit pull request.
 
 
@@ -44,7 +44,7 @@ Apart from Slack slash commands, you may be interested in adding other features 
 ---
 
 ### Boilerplate new command directory
-`./src/new-command` is a boilerplate directory contributors can use when creating a new Slack slash command.
+[`./src/new-command`](https://github.com/hotosm/slack-bots/tree/master/src/new-command) is a boilerplate directory contributors can use when creating a new Slack slash command.
 
 **Make sure you change all placeholders in the CloudFormation template and `package.json` with the correct information about your new command.**
 

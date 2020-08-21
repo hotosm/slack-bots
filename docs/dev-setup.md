@@ -27,19 +27,19 @@ There are numerous ways to create a CloudFormation stack:
 
 To create the CloudFormation stack using your own AWS account, you will need to change the `Code` property for the Lambda resource in your CloudFormation templates to point to an S3 bucket in your account.
 
-For the `slack-router` Lambda, upload to your S3 bucket the `./cloudformation/slack-router-lambda.js` file.
+For the `slack-router` Lambda, upload to your S3 bucket the [`./cloudformation/slack-router-lambda.js`](https://github.com/hotosm/slack-bots/blob/master/cloudformation/slack-router-lambda.js) file.
 
-Once you are ready to submit a pull request, change the `Code` property to follow the CloudFormation template in `./src/new-command/cloudformation/command-name-cfn-template.js` which uses the `BucketName` and `GitSha` parameters.
+Once you are ready to submit a pull request, change the `Code` property to follow the CloudFormation template in [`./src/new-command/cloudformation/command-name-cfn-template.js`](https://github.com/hotosm/slack-bots/blob/master/src/new-command/cloudformation/command-name-cfn-template.js) which uses the `BucketName` and `GitSha` parameters.
 
 **Make sure the `Handler` property for your Lambda resources has the correct path to the Lambda file.**
 
 The whole repo is automatically deployed after every commit to a HOT S3 bucket which is why for the handler we need to specify a path starting from the root of the repo (e.g. `Handler: 'src/command-name/command-name-lambda.handler'`).
 
-1. Create the CloudFormation stack for `slack-router`. You can find the CloudFormation template for this in `./cloudformation/slack-router-cfn-template.js`. This will create the API Gateway resources and router Lambda needed to route commands to the correct SNS topic and Lambda.
+1. Create the CloudFormation stack for `slack-router`. You can find the CloudFormation template for this in [`./cloudformation/slack-router-cfn-template.js`](https://github.com/hotosm/slack-bots/blob/master/cloudformation/slack-router-cfn-template.js). This will create the API Gateway resources and router Lambda needed to route commands to the correct SNS topic and Lambda.
 2. Create the CloudFormation stack for the command you are working on.
-3. Go to AWS console and check that all your resources have been created properly.
+3. Go to the AWS CloudFormation console and check that all your resources have been created properly.
 4. Check that the SNS topic and Lambda for your command are connected.
-5. Get the invoke URL for the `slack-router` API in the API Gateway AWS console. Append the route `/slack-to-lambda` to the end of the URL and copy.
+5. Get the invoke URL for the `slack-router` API in the AWS API Gateway console. Append the route `/slack-to-lambda` to the end of the URL and copy.
 6. Go to your app's dashboard in the [Slack API website](https://api.slack.com/apps) and follow instructions number 6-9 on how to **Create a Slack App** above.
 
 ### Troubleshooting
