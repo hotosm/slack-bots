@@ -49,7 +49,7 @@ const sendProjectStats = async (
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `:world_map: *Project Area* - ${projectArea}} sq. km.`,
+            text: `:world_map: *Project Area* - ${projectArea.toLocaleString()} sq. km.`,
           },
         },
         {
@@ -60,11 +60,11 @@ const sendProjectStats = async (
           fields: [
             {
               type: 'mrkdwn',
-              text: `:female-construction-worker::male-construction-worker: *Number of Contributors*: ${totalMappers}`,
+              text: `:female-construction-worker::male-construction-worker: *Number of Contributors*: ${totalMappers.toLocaleString()}`,
             },
             {
               type: 'mrkdwn',
-              text: `:clipboard: *Number of Tasks*: ${totalTasks}`,
+              text: `:clipboard: *Number of Tasks*: ${totalTasks.toLocaleString()}`,
             },
             {
               type: 'mrkdwn',

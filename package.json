@@ -1,21 +1,21 @@
 {
-  "name": "welcome-bot",
+  "name": "slack-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node welcome-bot/index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotosm/slack-bots.git"
   },
   "author": "Ramya Ragupathy <r.ragupathy85@gmail.com>",
   "license": "ISC",
-  "dependencies": {
-    "@slack/client": "^4.8.0",
-    "@slack/events-api": "^2.1.1",
-    "body-parser": "^1.18.3",
-    "dotenv": "^6.2.0",
-    "express": "^4.16.4"
+  "bugs": {
+    "url": "https://github.com/hotosm/slack-bots/issues"
   },
+  "homepage": "https://github.com/hotosm/slack-bots#readme",
+  "dependencies": {},
   "devDependencies": {
     "@mapbox/cloudfriend": "^4.2.0",
     "eslint": "^7.6.0",

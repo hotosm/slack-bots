@@ -1,12 +1,12 @@
 # Slack Bots
 
 ## Description
-This slackbot project has a routing setup for Slack bots, parsing and forwarding incoming messages to respective bots which are all handled asynchronously. All the Slack bots utilise the data from various API endpoints to implement commands and automate tasks to improve HOT's internal communications and make it easier for members to get information from HOT tools.
+This Slackbot project has a routing setup for Slack bots, parsing and forwarding incoming messages to respective bots which are all handled asynchronously. All the Slack bots utilise data from various API endpoints to implement commands and automate tasks to improve HOT's internal communications and make it easier for members to get information from HOT tools.
 
-[Contribution](https://github.com/hotosm/slack-bots/blob/master/docs/contribute.md)  | [Dev Setup](https://github.com/hotosm/slack-bots/blob/master/docs/dev-setup.md) | [Architecture details](https://github.com/hotosm/slack-bots/blob/master/docs/architecture.md) | [Existing slash commands](https://github.com/hotosm/slack-bots/blob/master/docs/slash-commands.md)
+[Contribution](https://github.com/hotosm/slack-bots/blob/master/docs/contribute.md)  | [Dev setup](https://github.com/hotosm/slack-bots/blob/master/docs/dev-setup.md) | [Architecture details](https://github.com/hotosm/slack-bots/blob/master/docs/architecture.md) | [Existing slash commands](https://github.com/hotosm/slack-bots/blob/master/docs/slash-commands.md)
 
 ### Folder structure
-Each command has its own folder within the repo containing its own `package.json` if needed, cloudformation folder containing the command's cfn template, ReadMe file, and everything else that the command needs to function.
+Each command has its own folder within the repo containing its own `package.json` if needed, cloudformation folder containing the command's cfn template, README file, and everything else that the command needs to function.
 
 E.g.
 

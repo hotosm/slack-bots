@@ -106,7 +106,7 @@ exports.createBlock = (
     if (flag.changesets !== 0) {
       accumulator.push({
         type: 'mrkdwn',
-        text: `*${flag.name}*: ${flag.changesets}`,
+        text: `*${flag.name}*: ${flag.changesets.toLocaleString()}`,
       })
     }
     return accumulator
@@ -121,14 +121,14 @@ exports.createBlock = (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `:page_with_curl: There are *${changesetCount} changesets* under ${filterDescriptor}.`,
+          text: `:page_with_curl: There are *${changesetCount.toLocaleString()} changesets* under ${filterDescriptor}.`,
         },
       },
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `:warning: *${suspectChangesetCount} or ${suspectChangesetPercentage}% of changesets* have been flagged as suspicious.\n:small_red_triangle: Here is the breakdown of flags: :small_red_triangle_down:`,
+          text: `:warning: *${suspectChangesetCount.toLocaleString()} or ${suspectChangesetPercentage}% of changesets* have been flagged as suspicious.\n:small_red_triangle: Here is the breakdown of flags: :small_red_triangle_down:`,
         },
       },
       ...flagSections,

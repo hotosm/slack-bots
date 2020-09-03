@@ -34,11 +34,11 @@ const buildSuccessBlock = (mappersOnline, totalProjects) => {
         fields: [
           {
             type: 'mrkdwn',
-            text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline}`,
+            text: `:female-construction-worker::male-construction-worker:*Number of Mappers Online*: ${mappersOnline.toLocaleString()}`,
           },
           {
             type: 'mrkdwn',
-            text: `:world_map: *Number of Projects Hosted*: ${totalProjects}`,
+            text: `:world_map: *Number of Projects Hosted*: ${totalProjects.toLocaleString()}`,
           },
         ],
       },
