@@ -1,10 +1,6 @@
 const fetch = require('node-fetch')
 
-const {
-  ERROR_MESSAGE,
-  USER_ERROR_BLOCK,
-  sendToSlack,
-} = require('./slack-utils')
+const utils = require('./slack-utils')
 
 const SECONDS_IN_HOUR = 3600
 const SECONDS_IN_DAY = SECONDS_IN_HOUR * 24
@@ -155,16 +151,16 @@ const sendUserStats = async (
       ],
     }
 
-    await sendToSlack(responseURL, userStatsBlock)
+    await utils.sendToSlack(responseURL, userStatsBlock)
   } catch (error) {
     console.error(error)
 
     if (error.message === 'User cannot be found or accessed') {
-      await sendToSlack(responseURL, USER_ERROR_BLOCK)
+      await utils.sendToSlack(responseURL, utils.USER_ERROR_BLOCK)
       return
     }
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
 
@@ -232,16 +228,16 @@ const sendProjectUserStats = async (
       ],
     }
 
-    await sendToSlack(responseURL, projectUserStatsBlock)
+    await utils.sendToSlack(responseURL, projectUserStatsBlock)
   } catch (error) {
     console.error(error)
 
     if (error.message === 'User not found') {
-      await sendToSlack(responseURL, USER_ERROR_BLOCK)
+      await utils.sendToSlack(responseURL, utils.USER_ERROR_BLOCK)
       return
     }
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    await utils.sendToSlack(responseURL, utils.ERROR_MESSAGE)
   }
 }
 
