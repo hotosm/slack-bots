@@ -18,10 +18,10 @@ const Resources = {
     Properties: {
       Name: 'slack-router-api',
       ProtocolType: 'HTTP',
-      Tags: [
-        { Key: 'Name', Value: 'slack-router-api' },
-        { Key: 'Project', Value: 'slackbot' },
-      ],
+      Tags: {
+        "Name":"slack-router-api",
+        "Project":"slackbot-router"
+      }
     },
   },
   SlackToLambdaIntegration: {
