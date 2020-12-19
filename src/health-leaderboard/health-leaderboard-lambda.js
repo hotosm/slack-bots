@@ -13,10 +13,10 @@ const OSM_STATS_URL = process.env.OSM_STATS_API_BASE_URL + 'status'
 const DAY_IN_MINUTES = 60 * 24
 
 function getDateFromOsmTimestamp(osmTimestamp) {
-  return new Date((osmTimestamp + OSM_EPOCH) * 60000)
+  return new Date((osmTimestamp + OSM_EPOCH) * 60000).toUTCString()
 }
 
-const getLeaderboardStatus = (overpassTime, leaderboardTime) => {
+exports.getLeaderboardStatus = (overpassTime, leaderboardTime) => {
   const difference = overpassTime - leaderboardTime
 
   if (difference <= 30) {
@@ -31,7 +31,7 @@ const getLeaderboardStatus = (overpassTime, leaderboardTime) => {
 }
 
 const buildSlackMessage = (latestLeaderboardTime, latestOverpassTime) => {
-  const leaderboardStatus = getLeaderboardStatus(
+  const leaderboardStatus = exports.getLeaderboardStatus(
     latestOverpassTime,
     latestLeaderboardTime
   )
@@ -67,7 +67,7 @@ const buildSlackMessage = (latestLeaderboardTime, latestOverpassTime) => {
   }
 }
 
-const sendToSlack = async (responseURL, message) => {
+exports.sendToSlack = async (responseURL, message) => {
   await fetch(responseURL, {
     method: 'post',
     body: JSON.stringify(message),
@@ -105,10 +105,10 @@ exports.handler = async (event) => {
       latestLeaderboardTime,
       latestOverpassTime
     )
-    await sendToSlack(responseURL, slackMessage)
+    exports.sendToSlack(responseURL, slackMessage)
   } catch (error) {
     console.error(error)
 
-    await sendToSlack(responseURL, ERROR_MESSAGE)
+    exports.sendToSlack(responseURL, ERROR_MESSAGE)
   }
 }
