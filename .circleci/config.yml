@@ -52,5 +52,4 @@ workflows:
           branches:
             only:
             - master
-            - feature/show-guidelines-file
             
