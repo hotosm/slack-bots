@@ -38,7 +38,7 @@ jobs:
         name: Run script to zip files and deploy them to S3
         command: |
           cd ${CIRCLE_WORKING_DIRECTORY}/src
-          for folder in */; do zip -r "${folder%/}.zip" "$folder" ; done
+          for folder in */; do cd $folder; npm i; cd ..; zip -r "${folder%/}.zip" "$folder"; done
           mkdir zipped
           mv *.zip zipped
           aws s3 sync zipped/ s3://slack-bot-commands --delete
@@ -52,4 +52,5 @@ workflows:
           branches:
             only:
             - master
+            - feature/show-guidelines-file
             
