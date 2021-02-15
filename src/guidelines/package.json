@@ -1,0 +1,18 @@
+{
+  "name": "guidelines",
+  "version": "1.0.0",
+  "description": "Opens the Guidelines Slack Channel PDF file",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotosm/slack-bots.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@slack/web-api": "^6.0.0",
+    "node-fetch": "^2.6.1"
+  }
+}
