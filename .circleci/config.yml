@@ -11,7 +11,7 @@ jobs:
         name: Install modules
         command: |
           sudo apt-get update
-          sudo pip3 install awscli --upgrade  ## may be required for s3 operations- depends on run environment of script
+          sudo pip3 install awscli --upgrade
     - run:
         name: Set folder permissions          ## may not be necessary but adding just in case
         command: |
@@ -37,7 +37,11 @@ jobs:
     - deploy: 
         name: Run script to zip files and deploy them to S3
         command: |
-          ./zip-them-up.sh                    ## This is where the script goes. 
+          cd ${CIRCLE_WORKING_DIRECTORY}/src
+          for folder in */; do zip -r "${folder%/}.zip" "$folder" ; done
+          mkdir zipped
+          mv *.zip zipped
+          aws s3 sync zipped/ s3://slack-bot-commands --delete
           echo "Deployed"
 workflows:
   version: 2
@@ -48,3 +52,4 @@ workflows:
           branches:
             only:
             - master
+            
