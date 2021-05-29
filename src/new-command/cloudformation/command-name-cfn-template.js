@@ -4,7 +4,7 @@ const Parameters = {
   BucketName: {
     Type: 'String',
     Description: 'Name of S3 bucket where Lambda code is saved',
-    Default: 'stork-us-east-1',
+    Default: 'slack-bot-commands',
   },
   GitSha: {
     Type: 'String',
@@ -43,10 +43,10 @@ const Resources = {
 
 const lambda = new cf.shortcuts.Lambda({
   LogicalName: 'CommandNameLambda', // change to name of command
-  Handler: 'src/command-name/command-name-lambda.handler', // change to name of folder and Lambda file in repo
+  Handler: 'command-name/command-name-lambda.handler', // change to name of folder and Lambda file in repo
   Code: {
     S3Bucket: cf.ref('BucketName'),
-    S3Key: cf.join('', ['bundles/slack-bots/', cf.ref('GitSha'), '.zip']),
+    S3Key: 'command-name.zip', // change to name of command
   },
   Runtime: 'nodejs12.x',
   Timeout: '60',
