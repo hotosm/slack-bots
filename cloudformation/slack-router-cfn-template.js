@@ -18,10 +18,11 @@ const Resources = {
     Properties: {
       Name: 'slack-router-api',
       ProtocolType: 'HTTP',
-      Tags: [
-        { Key: 'Name', Value: 'slack-router-api' },
-        { Key: 'Project', Value: 'slackbot' },
-      ],
+      Tags: { 
+        'Name': 'slack-router-api',
+        'Tool': 'slackbot',
+        'Environment': cf.stackName
+      },
     },
   },
   SlackToLambdaIntegration: {
@@ -106,6 +107,13 @@ const lambda = new cf.shortcuts.Lambda({
         'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/slack-router-signing-secret'
       ),
     },
+    {
+      Effect: 'Allow',
+      Action: [
+        'sns:Publish'
+      ],
+      Resource: cf.sub('arn:aws:sns:${AWS::Region}:${AWS::AccountId}:*')
+    }
   ],
   Tags: [
     { Key: 'Name', Value: 'slack-router-lambda' },

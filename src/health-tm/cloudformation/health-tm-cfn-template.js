@@ -4,7 +4,7 @@ const Parameters = {
   BucketName: {
     Type: 'String',
     Description: 'Name of S3 bucket where Lambda code is saved',
-    Default: 'stork-us-east-1',
+    Default: 'slack-bot-commands',
   },
   GitSha: {
     Type: 'String',
@@ -25,7 +25,8 @@ const Resources = {
       ],
       Tags: [
         { Key: 'Name', Value: 'health-tm-sns' },
-        { Key: 'Project', Value: 'slackbot' },
+        { Key: 'Tool', Value: 'slackbot' },
+        { Key: 'Environment', Value: cf.stackName },
       ],
     },
   },
@@ -42,10 +43,10 @@ const Resources = {
 
 const lambda = new cf.shortcuts.Lambda({
   LogicalName: 'HealthTmLambda',
-  Handler: 'src/health-tm/health-tm-lambda.handler',
+  Handler: 'health-tm/health-tm-lambda.handler',
   Code: {
     S3Bucket: cf.ref('BucketName'),
-    S3Key: cf.join('', ['bundles/slack-bots/', cf.ref('GitSha'), '.zip']),
+    S3Key: 'health-tm.zip',
   },
   Environment: {
     Variables: {
