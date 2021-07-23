@@ -26,7 +26,8 @@ const Resources = {
       ],
       Tags: [
         { Key: 'Name', Value: 'command-name-sns' }, // change to name of command
-        { Key: 'Project', Value: 'slackbot' },
+        { Key: 'Tool', Value: 'slackbot' },
+        { Key: 'Environment', Value: cf.stackName },
       ],
     },
   },

@@ -25,7 +25,8 @@ const Resources = {
       ],
       Tags: [
         { Key: 'Name', Value: 'guidelines-sns' },
-        { Key: 'Project', Value: 'slackbot' },
+        { Key: 'Tool', Value: 'slackbot' },
+        { Key: 'Environment', Value: cf.stackName },
       ],
     },
   },
@@ -45,7 +46,7 @@ const lambda = new cf.shortcuts.Lambda({
   Handler: 'guidelines/guidelines-lambda.handler',
   Code: {
     S3Bucket: cf.ref('BucketName'),
-    S3Key: "guidelines.zip",
+    S3Key: 'guidelines.zip',
   },
   Environment: {
     Variables: {
